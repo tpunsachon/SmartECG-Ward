@@ -23,12 +23,14 @@ export default function Layout() {
     setName('');
   };
 
-  // หน้า Auth (Log In / Register) - ชุดสีตามต้องการ
+  // หน้า Auth (Log In / Register) - สีเดิมของคุณทั้งหมด
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fdffd0' }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-          <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          
+          {/* Header ด้านบน */}
+          <View style={{ alignItems: 'center', marginBottom: 28 }}>
             <Text style={{ fontSize: 40, marginBottom: 8 }}>🏥</Text>
             <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#ae3494' }}>Smart ECG Ward</Text>
             <Text style={{ color: '#1668ba', fontSize: 14, marginTop: 4 }}>
@@ -36,6 +38,7 @@ export default function Layout() {
             </Text>
           </View>
 
+          {/* การ์ดฟอร์มสีฟ้า (#4bccff) */}
           <View style={{ backgroundColor: '#4bccff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#fefefe' }}>
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#ffffff', marginBottom: 16, textAlign: 'center' }}>
               {isRegistering ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
@@ -60,9 +63,9 @@ export default function Layout() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="nurse@hospital.com"
-                placeholderTextColor="#202050"
+                placeholderTextColor="#8b8b8b"
                 autoCapitalize="none"
-                style={{ backgroundColor: '#ffb2e8', color: '#000000', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ffd6f8' }}
+                style={{ backgroundColor: '#ffb2e8', color: '#423c3c', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ffd6f8' }}
               />
             </View>
 
@@ -72,7 +75,7 @@ export default function Layout() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#8b8b8b"
                 secureTextEntry
                 style={{ backgroundColor: '#ffb2e8', color: '#000000', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ffd6f8' }}
               />
@@ -91,17 +94,25 @@ export default function Layout() {
               onPress={() => setIsRegistering(!isRegistering)}
               style={{ marginTop: 16, alignItems: 'center' }}
             >
-              <Text style={{ color: '#f4f6f7', fontSize: 13 }}>
+              <Text style={{ color: '#f4f6f7', fontSize: 13, fontWeight: '500' }}>
                 {isRegistering ? 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ' : 'ยังไม่มีบัญชี? สมัครสมาชิกที่นี่'}
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* ⚠️ คำชี้แจง Disclaimer (แยกอยู่นอกกล่องสีฟ้า เว้นระยะสวยงาม) */}
+          <View style={{ marginTop: 28, paddingHorizontal: 12, alignItems: 'center' }}>
+            <Text style={{ color: '#64748b', fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+              ⚠️ <Text style={{ fontWeight: 'bold' }}>คำชี้แจง (Disclaimer):</Text> แอปพลิเคชันนี้จัดทำขึ้นเพื่อการศึกษาและเป็นชิ้นงานต้นแบบ (Prototype) เท่านั้น ไม่ใช่อุปกรณ์หรือเครื่องมือสำหรับวินิจฉัยทางการแพทย์จริง
+            </Text>
+          </View>
+
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  // แสดง Bottom Tabs หลังเข้าสู่ระบบ - Header สีฟ้า `#7fc1ff` ตามที่คุณกำหนด
+  // แสดง Bottom Tabs หลังเข้าสู่ระบบ - Header สีฟ้า `#7fc1ff`
   return (
     <Tabs
       screenOptions={{
