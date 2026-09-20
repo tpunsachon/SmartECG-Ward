@@ -87,24 +87,11 @@ React Native, Database, IoT และ Biomedical Technology
 git clone <URL_REPOSITORY_ของคุณ>
 cd SmartECG-Ward
 
-```
-# 7. API / Database / AI / Sensor
+``` 
 
-## 7.1 Database
+## 7. Database / API / AI / Sensor
 
-โปรเจกต์นี้ใช้ Supabase สำหรับจัดเก็บข้อมูลผู้ใช้งาน
-และข้อมูลผู้ป่วย
-
-### Patient Database
-
-| Column | Type | Description |
-|---|---|---|
-| id | uuid | รหัสข้อมูล |
-| patient_id | text | 
-
-## 8. API / Database / AI / Sensor
-
-### 8.1 Database
+### 7.1 Database
 
 โปรเจกต์ SmartECG-Ward ใช้ Supabase เป็น Database สำหรับจัดเก็บข้อมูลผู้ป่วย โดยข้อมูลที่กรอกผ่านหน้า Add Patient จะถูกบันทึกลงในฐานข้อมูล และสามารถเรียกกลับมาแสดงในแอปได้
 
@@ -129,7 +116,7 @@ cd SmartECG-Ward
 5. Supabase บันทึกข้อมูลลงในตาราง `patients`
 6. แอปสามารถเรียกข้อมูลกลับมาแสดงใน Dashboard หรือ Patient List
 
-### 8.2 API
+### 7.2 API
 
 ในเวอร์ชันปัจจุบัน แอปใช้ Supabase Client สำหรับติดต่อกับ Database เพื่อเพิ่มและเรียกดูข้อมูลผู้ป่วย
 
@@ -159,7 +146,7 @@ const { data, error } = await supabase
 
 > หมายเหตุ: โปรเจกต์เวอร์ชันปัจจุบันยังไม่มี Backend API แยก เช่น Node.js, Express หรือ FastAPI
 
-### 8.3 AI
+### 7.3 AI
 
 ปัจจุบัน SmartECG-Ward ยังไม่ได้เชื่อมต่อ AI หรือ Machine Learning สำหรับการวิเคราะห์ ECG จริง
 
@@ -173,7 +160,7 @@ const { data, error } = await supabase
 
 AI ที่พัฒนาขึ้นในอนาคตมีวัตถุประสงค์เพื่อสนับสนุนการเรียนรู้และการแสดงข้อมูลเท่านั้น ไม่ใช้แทนการวินิจฉัยของบุคลากรทางการแพทย์
 
-### 8.4 Sensor / IoT
+### 7.4 Sensor / IoT
 
 ในเวอร์ชันปัจจุบันยังไม่ได้เชื่อมต่อ ECG Sensor หรืออุปกรณ์ IoT จริง
 
@@ -205,25 +192,25 @@ ECG Graph / Dashboard
 
 ---
 
-## 9. ภาพหน้าจอ
+## 8. ภาพหน้าจอ
 
-### 9.1 Login
+### 8.1 Login
 
 ![Login Screen](screenshots/login.png)
 
-### 9.2 Register
+### 8.2 Register
 
 ![Register Screen](screenshots/register.png)
 
-### 9.3 Dashboard
+### 8.3 Dashboard
 
 ![Dashboard Screen](screenshots/dashboard.png)
 
-### 9.4 Add Patient
+### 8.4 Add Patient
 
 ![Add Patient Screen](screenshots/add-patient.png)
 
-### 9.5 Patient List
+### 8.5 Patient List
 
 ![Patient List Screen](screenshots/patient-list.png)
 
@@ -231,7 +218,7 @@ ECG Graph / Dashboard
 
 ---
 
-## 10. วิดีโอสาธิต
+## 9. วิดีโอสาธิต
 
 วิดีโอสาธิตการทำงานของ SmartECG-Ward
 
@@ -250,7 +237,7 @@ ECG Graph / Dashboard
 
 ---
 
-## 11. ข้อจำกัด
+## 10. ข้อจำกัด
 
 SmartECG-Ward เป็น Educational Prototype สำหรับการศึกษาและการพัฒนาระบบเท่านั้น
 
@@ -267,9 +254,9 @@ SmartECG-Ward เป็น Educational Prototype สำหรับการศ�
 
 ---
 
-## 12. การพัฒนาต่อในอนาคต
+## 11. การพัฒนาต่อในอนาคต
 
-### 12.1 Sensor / IoT
+### 11.1 Sensor / IoT
 
 * เชื่อมต่อ ECG Sensor กับ ESP32
 * รับข้อมูล ECG ผ่าน Wi-Fi
@@ -277,7 +264,7 @@ SmartECG-Ward เป็น Educational Prototype สำหรับการศ�
 * แสดงข้อมูล ECG แบบ Real-time
 * เพิ่มระบบแจ้งเตือน
 
-### 12.2 AI / Machine Learning
+### 11.2 AI / Machine Learning
 
 * พัฒนา AI สำหรับช่วยวิเคราะห์ ECG
 * เพิ่มระบบ Classification
@@ -285,7 +272,7 @@ SmartECG-Ward เป็น Educational Prototype สำหรับการศ�
 * เพิ่ม Explainable AI
 * ทดสอบ AI Model กับ Dataset ที่เหมาะสม
 
-### 12.3 Database
+### 11.3 Database
 
 * เพิ่ม Patient History
 * จัดเก็บประวัติ ECG
@@ -293,14 +280,14 @@ SmartECG-Ward เป็น Educational Prototype สำหรับการศ�
 * เพิ่มระบบค้นหาและกรองข้อมูล
 * รองรับการ Export ข้อมูลเป็น CSV / JSON / PDF
 
-### 12.4 User System
+### 11.4 User System
 
 * เพิ่ม User Role เช่น Doctor, Nurse และ Admin
 * เพิ่มระบบกำหนดสิทธิ์การเข้าถึงข้อมูล
 * เพิ่มระบบรักษาความปลอดภัยของข้อมูล
 * ปรับปรุงระบบ Authentication
 
-### 12.5 User Interface
+### 11.5 User Interface
 
 * ปรับปรุง UI ให้ใช้งานง่ายขึ้น
 * เพิ่มกราฟ ECG
@@ -310,7 +297,7 @@ SmartECG-Ward เป็น Educational Prototype สำหรับการศ�
 
 ---
 
-## 13. Responsible Use
+## 12. Responsible Use
 
 SmartECG-Ward เป็น Educational Prototype ที่จัดทำขึ้นเพื่อการศึกษา การทดลอง และการพัฒนาทักษะด้าน Software, IoT และ Healthcare Technology เท่านั้น
 
