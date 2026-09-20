@@ -75,7 +75,7 @@ React Native, Database, IoT และ Biomedical Technology
                    └──────────────────┘
 
 
-# 6. วิธีการติดตั้งและรันโปรเจกต์ (Getting Started)
+# **6.** วิธีการติดตั้งและรันโปรเจกต์ (Getting Started)
 
 ### 1. เครื่องมือที่ต้องเตรียมก่อนใช้งาน (Prerequisites)
 * [Node.js](https://nodejs.org/) (เวอร์ชัน 18 ขึ้นไป)
