@@ -86,4 +86,18 @@ React Native, Database, IoT และ Biomedical Technology
 ```bash
 git clone <URL_REPOSITORY_ของคุณ>
 cd SmartECG-Ward
- 
+
+```
+# 7. API / Database / AI / Sensor
+
+## 7.1 Database
+
+โปรเจกต์นี้ใช้ Supabase สำหรับจัดเก็บข้อมูลผู้ใช้งาน
+และข้อมูลผู้ป่วย
+
+### Patient Database
+
+| Column | Type | Description |
+|---|---|---|
+| id | uuid | รหัสข้อมูล |
+| patient_id | text | 
