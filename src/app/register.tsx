@@ -1,36 +1,70 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { supabase } from "../../lib/supabase";
 
 export default function RegisterScreen() {
   const router = useRouter();
 
-  const [fullname, setFullname] = useState('');
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullname, setFullname] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleRegister = () => {
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
     if (!fullname || !email || !username || !password || !confirmPassword) {
-      Alert.alert('กรอกข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง');
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('รหัสผ่านไม่ตรงกัน', 'กรุณาตรวจสอบรหัสผ่านและยืนยันรหัสผ่านอีกครั้ง');
+      Alert.alert(
+        "รหัสผ่านไม่ตรงกัน",
+        "กรุณาตรวจสอบรหัสผ่านและยืนยันรหัสผ่านอีกครั้ง",
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    // ส่งข้อมูลไปสมัครสมาชิกที่ Supabase
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password,
+      options: {
+        data: {
+          name: fullname, // ข้อมูลชื่อจะถูก Trigger ส่งไปบันทึกลงตาราง profiles
+          username: username,
+        },
+      },
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("สมัครสมาชิกไม่สำเร็จ", error.message);
       return;
     }
 
     Alert.alert(
-      'สมัครสมาชิกสำเร็จ! 🎉',
+      "สมัครสมาชิกสำเร็จ! 🎉",
       `ยินดีต้อนรับคุณ ${fullname}\nระบบได้ทำการลงทะเบียนบัญชีของคุณเรียบร้อยแล้ว`,
       [
         {
-          text: 'เข้าใช้งานระบบ',
-          onPress: () => router.replace('/overview'),
+          text: "เข้าใช้งานระบบ",
+          onPress: () => router.back(),
         },
-      ]
+      ],
     );
   };
 
@@ -104,8 +138,14 @@ export default function RegisterScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={S.btnPrimary} onPress={handleRegister}>
-          <Text style={S.btnPrimaryText}>ยืนยันการสมัครสมาชิก</Text>
+        <TouchableOpacity
+          style={[S.btnPrimary, loading && { opacity: 0.6 }]}
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          <Text style={S.btnPrimaryText}>
+            {loading ? "กำลังบันทึกข้อมูล..." : "ยืนยันการสมัครสมาชิก"}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={S.btnBack} onPress={() => router.back()}>
@@ -117,14 +157,48 @@ export default function RegisterScreen() {
 }
 
 const S = {
-  container: { flexGrow: 1, backgroundColor: '#f8fafc', justifyContent: 'center' as const, padding: 20 },
-  card: { backgroundColor: '#ffffff', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0' },
-  title: { fontSize: 22, fontWeight: 'bold' as const, color: '#0f172a' },
-  subtitle: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  label: { fontSize: 11, fontWeight: 'bold' as const, color: '#475569', marginBottom: 4 },
-  input: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 10, fontSize: 13, color: '#0f172a' },
-  btnPrimary: { backgroundColor: '#16a34a', padding: 14, borderRadius: 8, alignItems: 'center' as const, marginTop: 8 },
-  btnPrimaryText: { color: '#ffffff', fontWeight: 'bold' as const, fontSize: 14 },
-  btnBack: { padding: 12, alignItems: 'center' as const, marginTop: 10 },
-  btnBackText: { color: '#64748b', fontWeight: 'bold' as const, fontSize: 13 },
+  container: {
+    flexGrow: 1,
+    backgroundColor: "#f8fafc",
+    justifyContent: "center" as const,
+    padding: 20,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  title: { fontSize: 22, fontWeight: "bold" as const, color: "#0f172a" },
+  subtitle: { fontSize: 13, color: "#64748b", marginTop: 2 },
+  label: {
+    fontSize: 11,
+    fontWeight: "bold" as const,
+    color: "#475569",
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 13,
+    color: "#0f172a",
+  },
+  btnPrimary: {
+    backgroundColor: "#16a34a",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center" as const,
+    marginTop: 8,
+  },
+  btnPrimaryText: {
+    color: "#ffffff",
+    fontWeight: "bold" as const,
+    fontSize: 14,
+  },
+  btnBack: { padding: 12, alignItems: "center" as const, marginTop: 10 },
+  btnBackText: { color: "#64748b", fontWeight: "bold" as const, fontSize: 13 },
 };
