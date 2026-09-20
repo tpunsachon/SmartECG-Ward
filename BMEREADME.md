@@ -73,7 +73,7 @@ React Native, Database, IoT และ Biomedical Technology
                    │ Patient / Sensor │
                    │      Data        │
                    └──────────────────┘
-```bash
+```
 
 # **6.** วิธีการติดตั้งและรันโปรเจกต์ (Getting Started)
 
