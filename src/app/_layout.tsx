@@ -1,224 +1,139 @@
-import { Tabs, useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Session } from "@supabase/supabase-js";
+import { Tabs, useRouter, useSegments } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../../lib/supabase";
 
-export default function LoginScreen() {
+export default function RootLayout() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const segments = useSegments();
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกอีเมลและรหัสผ่าน");
-      return;
-    }
-
-    setLoading(true);
-
-    // ตรวจสอบการเข้าสู่ระบบด้วย Supabase Authentication
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password,
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setInitialized(true);
     });
 
-    setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
 
-    if (error) {
-      Alert.alert("เข้าสู่ระบบไม่สำเร็จ", "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
-      return;
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const currentRoute = segments[0] || "";
+
+  useEffect(() => {
+    if (!initialized) return;
+
+    const inAuthGroup =
+      currentRoute === "login" ||
+      currentRoute === "register" ||
+      currentRoute === "" ||
+      currentRoute === "index";
+
+    if (!session && !inAuthGroup) {
+      if (currentRoute !== "login") {
+        router.replace("/login");
+      }
+    } else if (session && inAuthGroup) {
+      if (currentRoute !== "overview") {
+        router.replace("/overview");
+      }
     }
+  }, [session, initialized, currentRoute]);
 
-    // เมื่อ Login สำเร็จ ให้พาเข้าหน้า Overview
-    router.replace("/overview");
-  };
+  if (!initialized) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0284c7" />
+      </View>
+    );
+  }
+
+  const hideTabBar =
+    currentRoute === "login" ||
+    currentRoute === "register" ||
+    currentRoute === "" ||
+    currentRoute === "index";
 
   return (
-    <ScrollView contentContainerStyle={S.container}>
-      <View style={S.card}>
-        <View style={{ marginBottom: 20 }}>
-          <Text style={S.title}>เข้าสู่ระบบ</Text>
-          <Text style={S.subtitle}>SmartECG-Ward System</Text>
-        </View>
+    <Tabs
+      screenOptions={{
+        headerShown: true, // เปิดการแสดง Header แถบด้านบน
+        headerStyle: {
+          backgroundColor: "#97c4db", // ตั้งค่า Header สีฟ้า
+        },
+        headerTintColor: "#ffffff", // ตัวหนังสือและไอคอนบน Header สีขาว
+        headerTitleStyle: {
+          fontWeight: "bold",
+          fontSize: 18,
+        },
+        tabBarStyle: hideTabBar
+          ? { display: "none" }
+          : { height: 62, paddingBottom: 8, paddingTop: 6 },
+        tabBarActiveTintColor: "#0284c7", // สีปุ่มเมื่อกดเลือก
+        tabBarInactiveTintColor: "#64748b", // สีปุ่มปกติ
+        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
+      }}
+    >
+      {/* 1. Overview Tab */}
+      <Tabs.Screen
+        name="overview"
+        options={{
+          title: "Overview",
+          headerTitle: "🏥 Overview Dashboard",
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: focused ? 22 : 18 }}>🏥</Text>
+          ),
+        }}
+      />
 
-        <View style={{ gap: 12, marginBottom: 20 }}>
-          <View>
-            <Text style={S.label}>อีเมล (EMAIL)</Text>
-            <TextInput
-              style={S.input}
-              placeholder="example@hospital.com"
-              placeholderTextColor="#94a3b8"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
+      {/* 2. Live Monitor Tab */}
+      <Tabs.Screen
+        name="live"
+        options={{
+          title: "Live Monitor",
+          headerTitle: "⚡ Real-time ECG Monitoring",
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: focused ? 22 : 18 }}>⚡</Text>
+          ),
+        }}
+      />
 
-          <View>
-            <Text style={S.label}>รหัสผ่าน (PASSWORD)</Text>
-            <TextInput
-              style={S.input}
-              placeholder="กรอกรหัสผ่าน"
-              placeholderTextColor="#94a3b8"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
-        </View>
+      {/* 3. Summary Tab */}
+      <Tabs.Screen
+        name="summary"
+        options={{
+          title: "Summary",
+          headerTitle: "📊 Summary & Analytics",
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: focused ? 22 : 18 }}>📊</Text>
+          ),
+        }}
+      />
 
-        <TouchableOpacity
-          style={[S.btnPrimary, loading && { opacity: 0.6 }]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          <Text style={S.btnPrimaryText}>
-            {loading ? "กำลังตรวจสอบ..." : "เข้าสู่ระบบ"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={S.btnBack}
-          onPress={() => router.push("/register")}
-        >
-          <Text style={S.btnBackText}>ยังไม่มีบัญชี?</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      {/* ซ่อน Route อื่นๆ ไม่ให้แสดงบน Bottom Tab Bar และ Header */}
+      <Tabs.Screen name="index" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="login" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="register" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="explore" options={{ href: null }} />
+      <Tabs.Screen name="history" options={{ href: null }} />
+      <Tabs.Screen name="add-patient" options={{ href: null }} />
+      <Tabs.Screen name="patient-live" options={{ href: null }} />
+    </Tabs>
   );
 }
 
-const S = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#f8fafc",
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
-    padding: 20,
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  title: { fontSize: 22, fontWeight: "bold", color: "#0f172a" },
-  subtitle: { fontSize: 13, color: "#64748b", marginTop: 2 },
-  label: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#475569",
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: "#f1f5f9",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 13,
-    color: "#0f172a",
-  },
-  btnPrimary: {
-    backgroundColor: "#1e293b",
-    padding: 14,
-    borderRadius: 8,
     alignItems: "center",
-    marginTop: 8,
+    backgroundColor: "#f8fafc",
   },
-  btnPrimaryText: { color: "#ffffff", fontWeight: "bold", fontSize: 14 },
-  btnBack: { padding: 12, alignItems: "center", marginTop: 10 },
-  btnBackText: { color: "#64748b", fontWeight: "bold", fontSize: 13 },
 });
-
-return (
-  <Tabs
-    screenOptions={{
-      headerStyle: { backgroundColor: "#7fc1ff" },
-      headerTintColor: "#ffffff",
-      headerTitleStyle: { fontWeight: "bold" },
-      headerRight: () => (
-        <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
-          <Text style={{ color: "#ef4444", fontWeight: "bold", fontSize: 13 }}>
-            🚪 ออกจากระบบ
-          </Text>
-        </TouchableOpacity>
-      ),
-      tabBarStyle: {
-        backgroundColor: "#ffffff",
-        borderTopColor: "#e2e8f0",
-        height: 60,
-        paddingBottom: 8,
-      },
-      tabBarActiveTintColor: "#0284c7",
-      tabBarInactiveTintColor: "#64748b",
-    }}
-  >
-    {/* แท็บที่ 1: Overview */}
-
-    <Tabs.Screen
-      name="index"
-      options={{
-        title: "Overview",
-        headerTitle: "Smart ECG Ward",
-        tabBarIcon: () => <Text style={{ fontSize: 18 }}>🏥</Text>,
-      }}
-    />
-    {/* แท็บที่ 2: Live Monitor */}
-
-    <Tabs.Screen
-      name="live"
-      options={{
-        title: "Live Monitor",
-        headerTitle: "Live ECG Monitoring",
-        tabBarIcon: () => <Text style={{ fontSize: 18 }}>⚡</Text>,
-      }}
-    />
-    {/* แท็บที่ 3: Summary */}
-
-    <Tabs.Screen
-      name="summary"
-      options={{
-        title: "Summary",
-        headerTitle: "Ward Summary Overview",
-        tabBarIcon: () => <Text style={{ fontSize: 18 }}>📈</Text>,
-      }}
-    />
-    {/* --- ซ่อนไฟล์ย่อยไม่ให้โผล่เป็นแท็บด้านล่าง --- */}
-
-    <Tabs.Screen name="login" options={{ href: null }} />
-
-    <Tabs.Screen
-      name="add-patient"
-      options={{ href: null, headerTitle: "ลงทะเบียนผู้ป่วยใหม่" }}
-    />
-
-    <Tabs.Screen
-      name="patient-live"
-      options={{ href: null, headerTitle: "Live Patient ECG" }}
-    />
-
-    <Tabs.Screen
-      name="history"
-      options={{ href: null, headerTitle: "Patient History" }}
-    />
-
-    <Tabs.Screen name="explore" options={{ href: null }} />
-
-    <Tabs.Screen name="overview" options={{ href: null }} />
-
-    <Tabs.Screen name="register" options={{ href: null }} />
-
-    <Tabs.Screen name="logout" options={{ href: null }} />
-  </Tabs>
-);

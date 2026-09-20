@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Alert,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -12,39 +13,27 @@ import { supabase } from "../../lib/supabase";
 
 export default function RegisterScreen() {
   const router = useRouter();
-
-  const [fullname, setFullname] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!fullname || !email || !username || !password || !confirmPassword) {
-      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert(
-        "รหัสผ่านไม่ตรงกัน",
-        "กรุณาตรวจสอบรหัสผ่านและยืนยันรหัสผ่านอีกครั้ง",
-      );
+    if (!name || !email || !password) {
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
 
     setLoading(true);
 
-    // ส่งข้อมูลไปสมัครสมาชิกที่ Supabase
-    const { data, error } = await supabase.auth.signUp({
+    // สมัครสมาชิกผ่าน Supabase Auth (รหัสผ่านจะถูก Hash เก็บในระบบความปลอดภัย)
+    const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password: password,
       options: {
         data: {
-          name: fullname, // ข้อมูลชื่อจะถูก Trigger ส่งไปบันทึกลงตาราง profiles
-          username: username,
+          name: name, // ส่งชื่อไปเพื่อให้ Trigger ใน สเต็ปที่ 1 ดึงไปใส่ profiles
+          role: "user",
         },
       },
     });
@@ -52,39 +41,30 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert("สมัครสมาชิกไม่สำเร็จ", error.message);
+      Alert.alert("ลงทะเบียนไม่สำเร็จ", error.message);
       return;
     }
 
-    Alert.alert(
-      "สมัครสมาชิกสำเร็จ! 🎉",
-      `ยินดีต้อนรับคุณ ${fullname}\nระบบได้ทำการลงทะเบียนบัญชีของคุณเรียบร้อยแล้ว`,
-      [
-        {
-          text: "เข้าใช้งานระบบ",
-          onPress: () => router.back(),
-        },
-      ],
-    );
+    Alert.alert("สำเร็จ", "ลงทะเบียนเรียบร้อยแล้ว กรุณาเข้าสู่ระบบ", [
+      { text: "ตกลง", onPress: () => router.replace("/login") },
+    ]);
   };
 
   return (
     <ScrollView contentContainerStyle={S.container}>
       <View style={S.card}>
-        <View style={{ marginBottom: 20 }}>
-          <Text style={S.title}>📝 ลงทะเบียนใช้งาน</Text>
-          <Text style={S.subtitle}>สร้างบัญชีสำหรับบุคลากรทางการแพทย์</Text>
-        </View>
+        <Text style={S.title}>ลงทะเบียนเข้าใช้งาน</Text>
+        <Text style={S.subtitle}>SmartECG-Ward System</Text>
 
-        <View style={{ gap: 12, marginBottom: 20 }}>
+        <View style={{ gap: 12, marginVertical: 20 }}>
           <View>
-            <Text style={S.label}>ชื่อ - นามสกุล (พร้อมคำนำหน้า)</Text>
+            <Text style={S.label}>ชื่อ-นามสกุล (NAME)</Text>
             <TextInput
               style={S.input}
-              placeholder="เช่น นพ.สมชาย ใจดี"
+              placeholder="กรอกชื่อ-นามสกุล"
               placeholderTextColor="#94a3b8"
-              value={fullname}
-              onChangeText={setFullname}
+              value={name}
+              onChangeText={setName}
             />
           </View>
 
@@ -102,38 +82,14 @@ export default function RegisterScreen() {
           </View>
 
           <View>
-            <Text style={S.label}>USERNAME</Text>
+            <Text style={S.label}>รหัสผ่าน (PASSWORD)</Text>
             <TextInput
               style={S.input}
-              placeholder="ตั้งชื่อผู้ใช้งาน"
-              placeholderTextColor="#94a3b8"
-              autoCapitalize="none"
-              value={username}
-              onChangeText={setUsername}
-            />
-          </View>
-
-          <View>
-            <Text style={S.label}>PASSWORD</Text>
-            <TextInput
-              style={S.input}
-              placeholder="ตั้งรหัสผ่าน"
+              placeholder="กรอกรหัสผ่านอย่างน้อย 6 ตัวอักษร"
               placeholderTextColor="#94a3b8"
               secureTextEntry
               value={password}
               onChangeText={setPassword}
-            />
-          </View>
-
-          <View>
-            <Text style={S.label}>CONFIRM PASSWORD</Text>
-            <TextInput
-              style={S.input}
-              placeholder="ยืนยันรหัสผ่านอีกครั้ง"
-              placeholderTextColor="#94a3b8"
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
             />
           </View>
         </View>
@@ -144,23 +100,26 @@ export default function RegisterScreen() {
           disabled={loading}
         >
           <Text style={S.btnPrimaryText}>
-            {loading ? "กำลังบันทึกข้อมูล..." : "ยืนยันการสมัครสมาชิก"}
+            {loading ? "กำลังบันทึก..." : "ยืนยันการลงทะเบียน"}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={S.btnBack} onPress={() => router.back()}>
-          <Text style={S.btnBackText}>⬅ ย้อนกลับไปหน้าเข้าสู่ระบบ</Text>
+        <TouchableOpacity
+          style={S.btnBack}
+          onPress={() => router.replace("/login")}
+        >
+          <Text style={S.btnBackText}>มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
-const S = {
+const S = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: "#f8fafc",
-    justifyContent: "center" as const,
+    justifyContent: "center",
     padding: 20,
   },
   card: {
@@ -170,11 +129,11 @@ const S = {
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
-  title: { fontSize: 22, fontWeight: "bold" as const, color: "#0f172a" },
+  title: { fontSize: 22, fontWeight: "bold", color: "#0f172a" },
   subtitle: { fontSize: 13, color: "#64748b", marginTop: 2 },
   label: {
     fontSize: 11,
-    fontWeight: "bold" as const,
+    fontWeight: "bold",
     color: "#475569",
     marginBottom: 4,
   },
@@ -188,17 +147,12 @@ const S = {
     color: "#0f172a",
   },
   btnPrimary: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#0284c7",
     padding: 14,
     borderRadius: 8,
-    alignItems: "center" as const,
-    marginTop: 8,
+    alignItems: "center",
   },
-  btnPrimaryText: {
-    color: "#ffffff",
-    fontWeight: "bold" as const,
-    fontSize: 14,
-  },
-  btnBack: { padding: 12, alignItems: "center" as const, marginTop: 10 },
-  btnBackText: { color: "#64748b", fontWeight: "bold" as const, fontSize: 13 },
-};
+  btnPrimaryText: { color: "#ffffff", fontWeight: "bold", fontSize: 14 },
+  btnBack: { padding: 12, alignItems: "center", marginTop: 10 },
+  btnBackText: { color: "#64748b", fontWeight: "bold", fontSize: 13 },
+});
