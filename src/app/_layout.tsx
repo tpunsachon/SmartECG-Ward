@@ -27,25 +27,14 @@ export default function RootLayout() {
 
   const currentRoute = segments[0] || "";
 
+  // 🎯 บังคับให้เปิดแอปเข้ามาแล้วเจอหน้า Login เสมอ
   useEffect(() => {
     if (!initialized) return;
 
-    const inAuthGroup =
-      currentRoute === "login" ||
-      currentRoute === "register" ||
-      currentRoute === "" ||
-      currentRoute === "index";
-
-    if (!session && !inAuthGroup) {
-      if (currentRoute !== "login") {
-        router.replace("/login");
-      }
-    } else if (session && inAuthGroup) {
-      if (currentRoute !== "overview") {
-        router.replace("/overview");
-      }
+    if (currentRoute === "" || currentRoute === "index") {
+      router.replace("/login");
     }
-  }, [session, initialized, currentRoute]);
+  }, [initialized, currentRoute]);
 
   if (!initialized) {
     return (
@@ -64,11 +53,11 @@ export default function RootLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true, // เปิดการแสดง Header แถบด้านบน
+        headerShown: true,
         headerStyle: {
-          backgroundColor: "#97c4db", // ตั้งค่า Header สีฟ้า
+          backgroundColor: "#aee4ff",
         },
-        headerTintColor: "#ffffff", // ตัวหนังสือและไอคอนบน Header สีขาว
+        headerTintColor: "#ffffff",
         headerTitleStyle: {
           fontWeight: "bold",
           fontSize: 18,
@@ -76,8 +65,8 @@ export default function RootLayout() {
         tabBarStyle: hideTabBar
           ? { display: "none" }
           : { height: 62, paddingBottom: 8, paddingTop: 6 },
-        tabBarActiveTintColor: "#0284c7", // สีปุ่มเมื่อกดเลือก
-        tabBarInactiveTintColor: "#64748b", // สีปุ่มปกติ
+        tabBarActiveTintColor: "#0284c7",
+        tabBarInactiveTintColor: "#64748b",
         tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
       }}
     >
