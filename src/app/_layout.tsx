@@ -1,172 +1,224 @@
-import React, { useState } from 'react';
-import { Tabs } from 'expo-router';
-import { Text, View, TextInput, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { Tabs, useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { supabase } from "../../lib/supabase";
 
-export default function Layout() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
+export default function LoginScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
 
-  const handleAuth = () => {
-    if (!email || !password) return;
-    setIsAuthenticated(true);
+    setLoading(true);
+
+    // ตรวจสอบการเข้าสู่ระบบด้วย Supabase Authentication
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("เข้าสู่ระบบไม่สำเร็จ", "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      return;
+    }
+
+    // เมื่อ Login สำเร็จ ให้พาเข้าหน้า Overview
+    router.replace("/overview");
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setEmail('');
-    setPassword('');
-    setName('');
-  };
-
-  // หน้า Auth (Log In / Register) - สีเดิมของคุณทั้งหมด
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fdffd0' }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-          
-          {/* Header ด้านบน */}
-          <View style={{ alignItems: 'center', marginBottom: 28 }}>
-            <Text style={{ fontSize: 40, marginBottom: 8 }}>🏥</Text>
-            <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#ae3494' }}>Smart ECG Ward</Text>
-            <Text style={{ color: '#1668ba', fontSize: 14, marginTop: 4 }}>
-              {isRegistering ? 'ลงทะเบียนพยาบาล / เจ้าหน้าที่' : 'ระบบมอนิเตอร์คลื่นไฟฟ้าหัวใจในวอร์ด'}
-            </Text>
-          </View>
-
-          {/* การ์ดฟอร์มสีฟ้า (#4bccff) */}
-          <View style={{ backgroundColor: '#4bccff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#fefefe' }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#ffffff', marginBottom: 16, textAlign: 'center' }}>
-              {isRegistering ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
-            </Text>
-
-            {isRegistering && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#060606', fontSize: 12, marginBottom: 4 }}>ชื่อ-นามสกุล / ตำแหน่ง</Text>
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="พว. สมหญิง รักดี"
-                  placeholderTextColor="#64748b"
-                  style={{ backgroundColor: '#ffb2e8', color: '#000000', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ffd6f8' }}
-                />
-              </View>
-            )}
-
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ color: '#060606', fontSize: 12, marginBottom: 4 }}>อีเมล / รหัสพนักงาน</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="nurse@hospital.com"
-                placeholderTextColor="#8b8b8b"
-                autoCapitalize="none"
-                style={{ backgroundColor: '#ffb2e8', color: '#423c3c', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ffd6f8' }}
-              />
-            </View>
-
-            <View style={{ marginBottom: 20 }}>
-              <Text style={{ color: '#060606', fontSize: 12, marginBottom: 4 }}>รหัสผ่าน</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor="#8b8b8b"
-                secureTextEntry
-                style={{ backgroundColor: '#ffb2e8', color: '#000000', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ffd6f8' }}
-              />
-            </View>
-
-            <TouchableOpacity
-              onPress={handleAuth}
-              style={{ backgroundColor: '#ffffff', padding: 14, borderRadius: 8, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#191818', fontWeight: 'bold', fontSize: 15 }}>
-                {isRegistering ? 'ยืนยันการสมัครสมาชิก' : 'เข้าสู่ระบบ'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setIsRegistering(!isRegistering)}
-              style={{ marginTop: 16, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#f4f6f7', fontSize: 13, fontWeight: '500' }}>
-                {isRegistering ? 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ' : 'ยังไม่มีบัญชี? สมัครสมาชิกที่นี่'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* ⚠️ คำชี้แจง Disclaimer (แยกอยู่นอกกล่องสีฟ้า เว้นระยะสวยงาม) */}
-          <View style={{ marginTop: 28, paddingHorizontal: 12, alignItems: 'center' }}>
-            <Text style={{ color: '#64748b', fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
-              ⚠️ <Text style={{ fontWeight: 'bold' }}>คำชี้แจง (Disclaimer):</Text> แอปพลิเคชันนี้จัดทำขึ้นเพื่อการศึกษาและเป็นชิ้นงานต้นแบบ (Prototype) เท่านั้น ไม่ใช่อุปกรณ์หรือเครื่องมือสำหรับวินิจฉัยทางการแพทย์จริง
-            </Text>
-          </View>
-
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // แสดง Bottom Tabs หลังเข้าสู่ระบบ - Header สีฟ้า `#7fc1ff`
   return (
-    <Tabs
-      screenOptions={{
-        headerStyle: { backgroundColor: '#7fc1ff' },
-        headerTintColor: '#ffffff',
-        headerTitleStyle: { fontWeight: 'bold' },
-        headerRight: () => (
-          <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
-            <Text style={{ color: '#ef4444', fontWeight: 'bold', fontSize: 13 }}>🚪 ออกจากระบบ</Text>
-          </TouchableOpacity>
-        ),
-        tabBarStyle: { backgroundColor: '#ffffff', borderTopColor: '#e2e8f0', height: 60, paddingBottom: 8 },
-        tabBarActiveTintColor: '#0284c7',
-        tabBarInactiveTintColor: '#64748b',
-      }}
-    >
-      {/* 1. แท็บ Overview */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Overview',
-          headerTitle: 'Smart ECG Ward',
-          tabBarIcon: () => <Text style={{ fontSize: 18 }}>🏥</Text>,
-        }}
-      />
+    <ScrollView contentContainerStyle={S.container}>
+      <View style={S.card}>
+        <View style={{ marginBottom: 20 }}>
+          <Text style={S.title}>เข้าสู่ระบบ</Text>
+          <Text style={S.subtitle}>SmartECG-Ward System</Text>
+        </View>
 
-      {/* 2. แท็บ Live Monitor */}
-      <Tabs.Screen
-        name="live"
-        options={{
-          title: 'Live Monitor',
-          headerTitle: 'Live ECG Monitoring',
-          tabBarIcon: () => <Text style={{ fontSize: 18 }}>⚡</Text>,
-        }}
-      />
+        <View style={{ gap: 12, marginBottom: 20 }}>
+          <View>
+            <Text style={S.label}>อีเมล (EMAIL)</Text>
+            <TextInput
+              style={S.input}
+              placeholder="example@hospital.com"
+              placeholderTextColor="#94a3b8"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
 
-      {/* 3. แท็บ Summary */}
-      <Tabs.Screen
-        name="summary"
-        options={{
-          title: 'Summary',
-          headerTitle: 'Ward Summary Overview',
-          tabBarIcon: () => <Text style={{ fontSize: 18 }}>📈</Text>,
-        }}
-      />
+          <View>
+            <Text style={S.label}>รหัสผ่าน (PASSWORD)</Text>
+            <TextInput
+              style={S.input}
+              placeholder="กรอกรหัสผ่าน"
+              placeholderTextColor="#94a3b8"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+        </View>
 
-      {/* --- ซ่อนไฟล์ย่อยไม่ให้โผล่เป็นแท็บด้านล่าง --- */}
-      <Tabs.Screen name="add-patient" options={{ href: null, headerTitle: 'ลงทะเบียนผู้ป่วยใหม่' }} />
-      <Tabs.Screen name="patient-live" options={{ href: null, headerTitle: 'Live Patient ECG' }} />
-      <Tabs.Screen name="history" options={{ href: null, headerTitle: 'Patient History' }} />
-      <Tabs.Screen name="explore" options={{ href: null }} />
-      <Tabs.Screen name="overview" options={{ href: null }} />
-      <Tabs.Screen name="register" options={{ href: null }} />
-      <Tabs.Screen name="logout" options={{ href: null }} />
-    </Tabs>
+        <TouchableOpacity
+          style={[S.btnPrimary, loading && { opacity: 0.6 }]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          <Text style={S.btnPrimaryText}>
+            {loading ? "กำลังตรวจสอบ..." : "เข้าสู่ระบบ"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={S.btnBack}
+          onPress={() => router.push("/register")}
+        >
+          <Text style={S.btnBackText}>ยังไม่มีบัญชี?</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
+
+const S = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    backgroundColor: "#f8fafc",
+    justifyContent: "center",
+    padding: 20,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  title: { fontSize: 22, fontWeight: "bold", color: "#0f172a" },
+  subtitle: { fontSize: 13, color: "#64748b", marginTop: 2 },
+  label: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#475569",
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 13,
+    color: "#0f172a",
+  },
+  btnPrimary: {
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  btnPrimaryText: { color: "#ffffff", fontWeight: "bold", fontSize: 14 },
+  btnBack: { padding: 12, alignItems: "center", marginTop: 10 },
+  btnBackText: { color: "#64748b", fontWeight: "bold", fontSize: 13 },
+});
+
+return (
+  <Tabs
+    screenOptions={{
+      headerStyle: { backgroundColor: "#7fc1ff" },
+      headerTintColor: "#ffffff",
+      headerTitleStyle: { fontWeight: "bold" },
+      headerRight: () => (
+        <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
+          <Text style={{ color: "#ef4444", fontWeight: "bold", fontSize: 13 }}>
+            🚪 ออกจากระบบ
+          </Text>
+        </TouchableOpacity>
+      ),
+      tabBarStyle: {
+        backgroundColor: "#ffffff",
+        borderTopColor: "#e2e8f0",
+        height: 60,
+        paddingBottom: 8,
+      },
+      tabBarActiveTintColor: "#0284c7",
+      tabBarInactiveTintColor: "#64748b",
+    }}
+  >
+    {/* แท็บที่ 1: Overview */}
+
+    <Tabs.Screen
+      name="index"
+      options={{
+        title: "Overview",
+        headerTitle: "Smart ECG Ward",
+        tabBarIcon: () => <Text style={{ fontSize: 18 }}>🏥</Text>,
+      }}
+    />
+    {/* แท็บที่ 2: Live Monitor */}
+
+    <Tabs.Screen
+      name="live"
+      options={{
+        title: "Live Monitor",
+        headerTitle: "Live ECG Monitoring",
+        tabBarIcon: () => <Text style={{ fontSize: 18 }}>⚡</Text>,
+      }}
+    />
+    {/* แท็บที่ 3: Summary */}
+
+    <Tabs.Screen
+      name="summary"
+      options={{
+        title: "Summary",
+        headerTitle: "Ward Summary Overview",
+        tabBarIcon: () => <Text style={{ fontSize: 18 }}>📈</Text>,
+      }}
+    />
+    {/* --- ซ่อนไฟล์ย่อยไม่ให้โผล่เป็นแท็บด้านล่าง --- */}
+
+    <Tabs.Screen name="login" options={{ href: null }} />
+
+    <Tabs.Screen
+      name="add-patient"
+      options={{ href: null, headerTitle: "ลงทะเบียนผู้ป่วยใหม่" }}
+    />
+
+    <Tabs.Screen
+      name="patient-live"
+      options={{ href: null, headerTitle: "Live Patient ECG" }}
+    />
+
+    <Tabs.Screen
+      name="history"
+      options={{ href: null, headerTitle: "Patient History" }}
+    />
+
+    <Tabs.Screen name="explore" options={{ href: null }} />
+
+    <Tabs.Screen name="overview" options={{ href: null }} />
+
+    <Tabs.Screen name="register" options={{ href: null }} />
+
+    <Tabs.Screen name="logout" options={{ href: null }} />
+  </Tabs>
+);

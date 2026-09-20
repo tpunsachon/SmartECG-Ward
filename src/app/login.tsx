@@ -91,7 +91,7 @@ export default function LoginScreen() {
           style={S.btnBack}
           onPress={() => router.push("/register")}
         >
-          <Text style={S.btnBackText}>ยังไม่มีบัญชี? สมัครสมาชิก</Text>
+          <Text style={S.btnBackText}>ยังไม่มีบัญชี?</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
