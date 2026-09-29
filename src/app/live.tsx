@@ -305,6 +305,19 @@ export default function LiveScreen() {
           📋 ดูประวัติย้อนหลัง (PATIENT HISTORY) ➔
         </Text>
       </TouchableOpacity>
+      {/* ⚠️ Disclaimer Box */}
+      <View style={S.disclaimerBox}>
+        <Text style={S.disclaimerTitle}>
+          ⚠️ ข้อตกลงและคำชี้แจงสิทธิ์ (Disclaimer)
+        </Text>
+        <Text style={S.disclaimerText}>
+          แอปพลิเคชันนี้เป็นเพียงระบบต้นแบบ (Prototype)
+          เพื่อการศึกษาและการวิจัยเท่านั้น
+          ไม่ได้เป็นอุปกรณ์หรือเครื่องมือทางการแพทย์สำหรับใช้ในการวินิจฉัย
+          ประเมิน หรือรักษาโรคจริง
+          ห้ามนำข้อมูลในระบบไปใช้ทดแทนการตัดสินใจหรือการรักษาพยาบาลโดยแพทย์เด็ดขาด
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -370,5 +383,25 @@ const S = {
     color: "#334155",
     fontWeight: "bold" as const,
     fontSize: 13,
+  },
+  /* Disclaimer Box Style */
+  disclaimerBox: {
+    marginTop: 0,
+    padding: 12,
+    backgroundColor: "#fffbe2", // 🎨 พื้นหลังสีเหลือง/ส้มอ่อนเตือนความคุ้มครอง
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#fef08a",
+  },
+  disclaimerTitle: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#854d0e",
+    marginBottom: 4,
+  },
+  disclaimerText: {
+    fontSize: 10,
+    color: "#a16207",
+    lineHeight: 15,
   },
 };
