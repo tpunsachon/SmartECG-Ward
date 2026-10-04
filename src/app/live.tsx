@@ -246,7 +246,6 @@ export default function LiveScreen() {
 
       const deletedIds = await loadDeletedLocalIds();
 
-      // ดึงข้อมูลตรงจาก Supabase
       const { data, error } = await supabase
         .from("patients")
         .select(`
@@ -274,7 +273,7 @@ export default function LiveScreen() {
         return;
       }
 
-      const databasePatients: Patient[] = (data || []).map((item: any, index: number) => {
+      const databasePatients: Patient[] = (data || []).map((item: any) => {
         const level = String(item.level || "NORMAL").toUpperCase();
         const style = getLevelStyle(level);
         const customId = String(item.id);
@@ -389,22 +388,6 @@ export default function LiveScreen() {
       border: style.border,
     };
   }, [patients, selectedId]);
-
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [result, setResult] = useState<Patient | null>(null);
-
-  useEffect(() => {
-    setResult(null);
-  }, [selectedId]);
-
-  const runAI = () => {
-    if (!patient) return;
-    setLoadingAI(true);
-    setTimeout(() => {
-      setLoadingAI(false);
-      setResult(patient);
-    }, 1200);
-  };
 
   if (loadingPatients && patients.length === 0) {
     return (
@@ -533,31 +516,6 @@ export default function LiveScreen() {
         </View>
       </View>
 
-      <View style={S.card}>
-        <Text style={{ color: "#0f172a", fontWeight: "bold", marginBottom: 8 }}>🤖 AI DIAGNOSIS</Text>
-
-        {result ? (
-          <View style={[S.resBox, { borderColor: result.border, backgroundColor: result.bg }]}>
-            <Text style={{ color: result.color, fontWeight: "bold", fontSize: 15 }}>
-              {result.level}: {result.status}
-            </Text>
-            {result.conf !== null && result.conf !== undefined ? (
-              <Text style={{ color: "#334155", fontSize: 12, marginTop: 2 }}>Confidence: {result.conf}%</Text>
-            ) : (
-              <Text style={{ color: "#64748b", fontSize: 11, marginTop: 4 }}>ยังไม่มีค่า AI Confidence จากฐานข้อมูล</Text>
-            )}
-          </View>
-        ) : (
-          <Text style={{ color: "#64748b", fontSize: 12, marginBottom: 12 }}>
-            กดปุ่มด้านล่างเพื่อเริ่ม ประมวลผลสัญญาณ ECG ด้วย AI
-          </Text>
-        )}
-
-        <TouchableOpacity style={[S.btnPrimary, { backgroundColor: patient.color }]} onPress={runAI} disabled={loadingAI}>
-          {loadingAI ? <ActivityIndicator color="#fff" /> : <Text style={S.btnText}>RUN AI DIAGNOSIS</Text>}
-        </TouchableOpacity>
-      </View>
-
       <TouchableOpacity
         style={S.btnSecondary}
         onPress={() => router.push({ pathname: "/history", params: { patientId: patient.id } })}
@@ -606,9 +564,6 @@ const S = StyleSheet.create({
   card: { backgroundColor: "#ffffff", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0" },
   badge: { alignSelf: "flex-start", color: "#ffffff", fontWeight: "bold", fontSize: 10, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginBottom: 4 },
   imgBox: { width: "100%", height: 180, backgroundColor: "#ffffff", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#e2e8f0" },
-  resBox: { padding: 10, borderRadius: 8, borderWidth: 1, marginBottom: 10 },
-  btnPrimary: { paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  btnText: { color: "#ffffff", fontWeight: "bold", fontSize: 13 },
   btnSecondary: { backgroundColor: "#f1f5f9", borderWidth: 1, borderColor: "#cbd5e1", paddingVertical: 12, borderRadius: 8, alignItems: "center", marginBottom: 12 },
   btnSecondaryText: { color: "#334155", fontWeight: "bold", fontSize: 12 },
   disclaimerBox: { padding: 10, backgroundColor: "#fffbe2", borderRadius: 8, borderWidth: 1, borderColor: "#fef08a" },
