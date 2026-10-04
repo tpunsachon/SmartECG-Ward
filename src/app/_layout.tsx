@@ -25,7 +25,7 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const currentRoute = segments[0] || "";
+  const currentRoute = (segments[0] || "") as string;
 
   // 🎯 บังคับให้เปิดแอปเข้ามาแล้วเจอหน้า Login เสมอ
   useEffect(() => {

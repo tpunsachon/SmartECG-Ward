@@ -1,17 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  useFocusEffect,
-  useLocalSearchParams,
-  useRouter,
-} from "expo-router";
-
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -22,109 +11,87 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
 import { supabase } from "../../lib/supabase";
 
-// =====================================================
-// ข้อมูลผู้ป่วยเก่า (Mock Data PT1 - PT5)
-// =====================================================
+const LEVEL_PRIORITY: Record<string, number> = {
+  EMERGENCY: 1,
+  CRITICAL: 2,
+  WARNING: 3,
+  NORMAL: 4,
+};
 
 const OLD_PATIENTS: Record<string, any> = {
   PT1: {
     id: "PT1",
-    hn: "HN 66-04912",
     name: "กรองแก้ว บุญมี",
     age: 62,
     gender: "หญิง",
-
     hr: 112,
     spo2: 96,
     bp: "138/88",
-
     status: "AFib Detected",
     conf: 96.8,
     level: "CRITICAL",
-
     color: "#dc2626",
     bg: "#fef2f2",
     border: "#fca5a5",
   },
-
   PT2: {
     id: "PT2",
-    hn: "HN 65-11084",
-    name: "วรรณรสา อรุณรัศมิ์",
-    age: 58,
-    gender: "หญิง",
-
-    hr: 88,
-    spo2: 98,
-    bp: "145/92",
-
-    status: "LVH Detected",
-    conf: 92.4,
-    level: "WARNING",
-
-    color: "#d97706",
-    bg: "#fffbeb",
-    border: "#fde68a",
-  },
-
-  PT3: {
-    id: "PT3",
-    hn: "HN 67-00129",
-    name: "พุฒิภัทร จุฑาเทพ",
-    age: 45,
-    gender: "ชาย",
-
-    hr: 72,
-    spo2: 99,
-    bp: "120/80",
-
-    status: "Normal Sinus Rhythm",
-    conf: 99.1,
-    level: "NORMAL",
-
-    color: "#16a34a",
-    bg: "#f0fdf4",
-    border: "#86efac",
-  },
-
-  PT4: {
-    id: "PT4",
-    hn: "HN 64-08821",
     name: "มารตี เทวพรหม",
     age: 67,
     gender: "หญิง",
-
     hr: 185,
     spo2: 89,
     bp: "90/60",
-
     status: "Ventricular Fibrillation (VFib)",
     conf: 98.9,
     level: "EMERGENCY",
-
     color: "#991b1b",
     bg: "#ffe4e6",
     border: "#f87171",
   },
-
+  PT3: {
+    id: "PT3",
+    name: "พุฒิภัทร จุฑาเทพ",
+    age: 45,
+    gender: "ชาย",
+    hr: 72,
+    spo2: 99,
+    bp: "120/80",
+    status: "Normal Sinus Rhythm",
+    conf: 99.1,
+    level: "NORMAL",
+    color: "#16a34a",
+    bg: "#f0fdf4",
+    border: "#86efac",
+  },
+  PT4: {
+    id: "PT4",
+    name: "วรรณรสา อรุณรัศมิ์",
+    age: 58,
+    gender: "หญิง",
+    hr: 88,
+    spo2: 98,
+    bp: "145/92",
+    status: "LVH Detected",
+    conf: 92.4,
+    level: "WARNING",
+    color: "#d97706",
+    bg: "#fffbeb",
+    border: "#fde68a",
+  },
   PT5: {
     id: "PT5",
-    hn: "HN 68-00512",
     name: "รณ นภาลัย",
     age: 32,
     gender: "ชาย",
-
     hr: 75,
     spo2: 99,
     bp: "120/80",
-
     status: "Normal Sinus Rhythm",
     conf: 99.0,
     level: "NORMAL",
-
     color: "#16a34a",
     bg: "#f0fdf4",
     border: "#86efac",
@@ -136,21 +103,18 @@ const getOldPatientImage = (key: string) => {
     switch (key) {
       case "PT1":
         return require("../../assets/images/afib.jpg");
-
       case "PT2":
-        return require("../../assets/images/lvh.jpg");
-
+        return require("../../assets/images/vfib.jpg");
       case "PT3":
         return require("../../assets/images/normal.jpg");
-
       case "PT4":
-        return require("../../assets/images/vfib.jpg");
-
+        return require("../../assets/images/lvh.jpg");
+      case "PT5":
+        return require("../../assets/images/normal.jpg");
       default:
         return null;
     }
   } catch (e) {
-    console.log("ไม่พบรูป ECG ของผู้ป่วยเก่า:", e);
     return null;
   }
 };
@@ -182,8 +146,8 @@ const evaluateLevelFromHR = (hr: number | null, defaultLevel: string) => {
 
 type Patient = {
   id: string;
+  displayId?: string;
   raw_db_id?: string;
-  hn: string;
   name: string;
   age: number;
   gender: string;
@@ -228,12 +192,12 @@ export default function LiveScreen() {
   const paramKey = String(Array.isArray(rawId) ? rawId[0] : rawId || "").trim();
 
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedId, setSelectedId] = useState<string>(paramKey || "PT1");
+  const [selectedId, setSelectedId] = useState<string>(paramKey || "PT2");
   const [loadingPatients, setLoadingPatients] = useState(true);
 
   const loadDeletedLocalIds = async () => {
     try {
-      const saved = await AsyncStorage.getItem('DELETED_PATIENT_IDS');
+      const saved = await AsyncStorage.getItem("DELETED_PATIENT_IDS");
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -250,7 +214,6 @@ export default function LiveScreen() {
         .from("patients")
         .select(`
           id,
-          hn,
           name,
           age,
           gender,
@@ -261,27 +224,26 @@ export default function LiveScreen() {
           status,
           ecg_image,
           created_at
-        `)
-        .order("created_at", { ascending: true });
+        `);
 
       if (error) {
         console.error("Fetch Live Patients Error:", error);
         const oldPatients = Object.values(OLD_PATIENTS)
-          .map((item: any): Patient => ({ ...item }))
+          .map((item: any): Patient => ({ ...item, displayId: item.id }))
           .filter((item) => !deletedIds.includes(item.id));
         setPatients(oldPatients);
         return;
       }
 
+      let dbIndex = 6;
       const databasePatients: Patient[] = (data || []).map((item: any) => {
         const level = String(item.level || "NORMAL").toUpperCase();
         const style = getLevelStyle(level);
-        const customId = String(item.id);
 
         return {
-          id: customId,
+          id: String(item.id),
+          displayId: `PT${dbIndex++}`,
           raw_db_id: String(item.id || ""),
-          hn: String(item.hn || "-"),
           name: String(item.name || "-"),
           age: Number(item.age || 0),
           gender: String(item.gender || "-"),
@@ -300,20 +262,44 @@ export default function LiveScreen() {
       });
 
       const dbIds = new Set(databasePatients.map((p) => p.id));
+      const dbNames = new Set(databasePatients.map((p) => p.name.trim()));
 
-      const oldPatientsList = Object.values(OLD_PATIENTS).filter(
-        (item: any) => !deletedIds.includes(item.id) && !dbIds.has(item.id)
-      );
+      // กรอง OLD_PATIENTS ไม่ให้ชื่อซ้ำกับ Supabase
+      const oldPatientsList = Object.values(OLD_PATIENTS)
+        .filter(
+          (item: any) =>
+            !deletedIds.includes(item.id) &&
+            !dbIds.has(item.id) &&
+            !dbNames.has(item.name.trim())
+        )
+        .map((item: any) => ({ ...item, displayId: item.id }));
 
-      const allPatients = [...oldPatientsList, ...databasePatients].filter(
+      // รวมลิสต์ข้อมูล
+      let allPatients = [...oldPatientsList, ...databasePatients].filter(
         (p) => !deletedIds.includes(p.id)
       );
+
+      // ⚡ จัดเรียงลำดับตามความอันตราย (LEVEL_PRIORITY)
+      allPatients.sort((a, b) => {
+        const levelA = evaluateLevelFromHR(a.hr, a.level);
+        const levelB = evaluateLevelFromHR(b.hr, b.level);
+
+        const priorityA = LEVEL_PRIORITY[levelA] || 99;
+        const priorityB = LEVEL_PRIORITY[levelB] || 99;
+
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB; // เลขน้อยขึ้นก่อน (EMERGENCY = 1)
+        }
+
+        // ถ้าระดับเท่ากัน ให้เรียงตาม Heart Rate จากมากไปน้อย
+        return (b.hr || 0) - (a.hr || 0);
+      });
 
       setPatients(allPatients);
 
       if (paramKey) {
         const matched = allPatients.find(
-          (p) => p.id === paramKey || p.raw_db_id === paramKey || p.hn === paramKey
+          (p) => p.id === paramKey || p.raw_db_id === paramKey || p.displayId === paramKey
         );
         if (matched) {
           setSelectedId(matched.id);
@@ -340,7 +326,7 @@ export default function LiveScreen() {
   useEffect(() => {
     if (!paramKey) return;
     const matched = patients.find(
-      (p) => p.id === paramKey || p.raw_db_id === paramKey || p.hn === paramKey
+      (p) => p.id === paramKey || p.raw_db_id === paramKey || p.displayId === paramKey
     );
     if (matched) {
       setSelectedId(matched.id);
@@ -370,7 +356,7 @@ export default function LiveScreen() {
 
   const patient = useMemo(() => {
     const found = patients.find(
-      (item) => item.id === selectedId || item.raw_db_id === selectedId || item.hn === selectedId
+      (item) => item.id === selectedId || item.raw_db_id === selectedId || item.displayId === selectedId
     );
 
     if (!found) {
@@ -422,12 +408,14 @@ export default function LiveScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: "#f8fafc", padding: 16 }}>
       <View style={{ marginBottom: 12 }}>
         <Text style={{ fontSize: 12, fontWeight: "bold", color: "#64748b", marginBottom: 6 }}>
-          เลือกผู้ป่วย:
+          เลือกผู้ป่วย (เรียงตามความอันตราย):
         </Text>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {patients.map((item, index) => {
             const isSelected = item.id === patient.id;
+            const currentLevel = evaluateLevelFromHR(item.hr, item.level);
+            const levelStyle = getLevelStyle(currentLevel);
 
             return (
               <TouchableOpacity
@@ -437,11 +425,11 @@ export default function LiveScreen() {
                   paddingVertical: 6,
                   paddingHorizontal: 12,
                   borderRadius: 20,
-                  backgroundColor: isSelected ? item.color : "#e2e8f0",
+                  backgroundColor: isSelected ? levelStyle.color : "#e2e8f0",
                 }}
               >
                 <Text style={{ color: isSelected ? "#ffffff" : "#334155", fontWeight: "bold", fontSize: 12 }}>
-                  {item.name}
+                  {item.name} ({item.displayId || item.id})
                 </Text>
               </TouchableOpacity>
             );
@@ -452,10 +440,9 @@ export default function LiveScreen() {
       <View style={S.card}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <View style={{ flex: 1, paddingRight: 10 }}>
-            <Text style={[S.badge, { backgroundColor: patient.color }]}>{patient.id}</Text>
+            <Text style={[S.badge, { backgroundColor: patient.color }]}>{patient.displayId || patient.id}</Text>
             <Text style={{ fontSize: 20, fontWeight: "bold", color: "#0f172a", marginTop: 2 }}>{patient.name}</Text>
             <Text style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>{patient.gender} • {patient.age} ปี</Text>
-            <Text style={{ color: "#64748b", fontSize: 11, marginTop: 3 }}>{patient.hn}</Text>
           </View>
 
           <Text style={{ color: patient.color, fontWeight: "bold", fontSize: 12 }}>
@@ -478,7 +465,7 @@ export default function LiveScreen() {
       <View style={S.card}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <Text style={{ color: "#0284c7", fontWeight: "bold" }}>
-            ⚡ LEAD II ECG WAVEFORM ({patient.id})
+            ⚡ LEAD II ECG WAVEFORM ({patient.displayId || patient.id})
           </Text>
           {(oldImage || patient.ecg_image) && (
             <Text style={{ fontSize: 11, color: "#64748b" }}>🔍 แตะเพื่อซูมขยาย</Text>
@@ -501,7 +488,7 @@ export default function LiveScreen() {
           ) : (
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 10 }}>
               <Text style={{ color: "#22c55e", fontSize: 12, fontWeight: "bold", textAlign: "center" }}>
-                📈 [ ECG Waveform Signal - {patient.id} ]
+                📈 [ ECG Waveform Signal - {patient.displayId || patient.id} ]
               </Text>
               <Text style={{ color: "#94a3b8", fontSize: 10, marginTop: 6, textAlign: "center" }}>
                 ยังไม่มี ECG Image

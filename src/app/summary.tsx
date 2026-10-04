@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -7,14 +8,43 @@ import {
   Text,
   View,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
 import { supabase } from "../../lib/supabase";
 
 // =====================================================
-// ผู้ป่วยเก่า (Mock Data - ยังคงไว้เหมือนเดิม)
+// ลำดับความสำคัญของระดับความรุนแรง
+// =====================================================
+const LEVEL_PRIORITY: Record<string, number> = {
+  EMERGENCY: 1,
+  CRITICAL: 2,
+  WARNING: 3,
+  NORMAL: 4,
+};
+
+// Map รูปภาพจาก assets/images ตามโรค / Level
+const IMAGE_BY_LEVEL: Record<string, any> = {
+  EMERGENCY: require("../../assets/images/vfib.jpg"),
+  CRITICAL: require("../../assets/images/afib.jpg"),
+  WARNING: require("../../assets/images/lvh.jpg"),
+  NORMAL: require("../../assets/images/normal.jpg"),
+};
+
+// =====================================================
+// ผู้ป่วยเก่า (Mock Data)
 // =====================================================
 
 const OLD_PATIENTS = [
+  {
+    id: "PT4",
+    name: "มารตี เทวพรหม",
+    age: 67,
+    gender: "หญิง",
+    status: "Ventricular Fibrillation (VFib)",
+    level: "EMERGENCY",
+    image: require("../../assets/images/vfib.jpg"),
+    color: "#991b1b",
+    bg: "#ffe4e6",
+    border: "#f87171",
+  },
   {
     id: "PT1",
     name: "กรองแก้ว บุญมี",
@@ -52,18 +82,6 @@ const OLD_PATIENTS = [
     border: "#86efac",
   },
   {
-    id: "PT4",
-    name: "มารตี เทวพรหม",
-    age: 67,
-    gender: "หญิง",
-    status: "Ventricular Fibrillation (VFib)",
-    level: "EMERGENCY",
-    image: require("../../assets/images/vfib.jpg"),
-    color: "#991b1b",
-    bg: "#ffe4e6",
-    border: "#f87171",
-  },
-  {
     id: "PT5",
     name: "รณ นภาลัย",
     age: 32,
@@ -92,7 +110,6 @@ type Patient = {
   bg: string;
   border: string;
   image?: any;
-  ecg_image?: string | null;
   created_at?: string;
 };
 
@@ -145,7 +162,6 @@ export default function SummaryScreen() {
 
   const fetchPatients = useCallback(async () => {
     try {
-      // 1. ดึงข้อมูลจากตาราง patients
       const { data, error } = await supabase
         .from("patients")
         .select(
@@ -156,13 +172,11 @@ export default function SummaryScreen() {
           gender,
           level,
           status,
-          ecg_image,
           created_at
         `
         )
         .order("created_at", { ascending: true });
 
-      // 2. ดึงรายชื่อ ID ของผู้ป่วยที่ถูกสั่งลบแล้ว
       const { data: deletedData } = await supabase
         .from("deleted_patients")
         .select("patient_id");
@@ -173,14 +187,13 @@ export default function SummaryScreen() {
 
       if (error) {
         console.error("Summary fetch error:", error);
-        const activeOldPatients = (OLD_PATIENTS as Patient[]).filter(
-          (p) => !deletedIds.has(p.id)
-        );
+        const activeOldPatients = (OLD_PATIENTS as Patient[])
+          .filter((p) => !deletedIds.has(p.id))
+          .sort((a, b) => (LEVEL_PRIORITY[a.level] || 99) - (LEVEL_PRIORITY[b.level] || 99));
         setPatients(activeOldPatients);
         return;
       }
 
-      // แปลงข้อมูลจาก Supabase
       const databasePatients: Patient[] = (data || []).map((item: any) => {
         const level = String(item.level || "NORMAL").toUpperCase();
         const style = getLevelStyle(level);
@@ -195,42 +208,42 @@ export default function SummaryScreen() {
           color: style.color,
           bg: style.bg,
           border: style.border,
-          ecg_image: item.ecg_image || null,
+          image: IMAGE_BY_LEVEL[level] || IMAGE_BY_LEVEL.NORMAL,
           created_at: item.created_at,
         };
       });
 
-      // เก็บ ID ทั้งหมดที่มีอยู่ใน DB
       const dbIds = new Set(databasePatients.map((p) => p.id));
 
-      // กรอง Mock Patients: ตัดคนโดนลบ และคนที่มีอยู่ใน DB เพื่อป้องกัน ID ซ้ำกัน
       const activeOldPatients = (OLD_PATIENTS as Patient[]).filter(
         (p) => !deletedIds.has(p.id) && !dbIds.has(p.id)
       );
 
-      // รวม Mock + Database โดยตัด ID ที่ถูกสั่งลบออก
       const allPatients: Patient[] = [
         ...activeOldPatients,
         ...databasePatients,
-      ].filter((p) => !deletedIds.has(p.id));
+      ]
+        .filter((p) => !deletedIds.has(p.id))
+        .sort((a, b) => (LEVEL_PRIORITY[a.level] || 99) - (LEVEL_PRIORITY[b.level] || 99));
 
       setPatients(allPatients);
     } catch (error) {
       console.error("Summary exception:", error);
-      setPatients((OLD_PATIENTS as Patient[]).filter((p) => p.id));
+      const activeOldPatients = (OLD_PATIENTS as Patient[])
+        .filter((p) => p.id)
+        .sort((a, b) => (LEVEL_PRIORITY[a.level] || 99) - (LEVEL_PRIORITY[b.level] || 99));
+      setPatients(activeOldPatients);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // ดึงข้อมูลใหม่ทุกครั้งที่เปิด/สลับกดเข้าหน้า Tab Summary
   useFocusEffect(
     useCallback(() => {
       fetchPatients();
     }, [fetchPatients])
   );
 
-  // ดักฟังการอัปเดตข้อมูลแบบ Realtime จากตาราง patients และ deleted_patients
   useEffect(() => {
     const channel = supabase
       .channel("summary-patients-realtime")
@@ -267,12 +280,10 @@ export default function SummaryScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* จำนวนผู้ป่วย */}
         <Text style={styles.patientCount}>
           ผู้ป่วยทั้งหมด {patients.length} คน
         </Text>
 
-        {/* Patient Cards */}
         {patients.map((patient, index) => {
           return (
             <View
@@ -320,28 +331,13 @@ export default function SummaryScreen() {
                 {patient.age} ปี
               </Text>
 
-              {/* ECG Image */}
+              {/* ECG Image (ปรับให้พอดีกรอบ) */}
               <View style={styles.imageContainer}>
-                {patient.image ? (
-                  <Image
-                    source={patient.image}
-                    style={styles.ecgImage}
-                    resizeMode="cover"
-                  />
-                ) : patient.ecg_image ? (
-                  <Image
-                    source={{
-                      uri: patient.ecg_image,
-                    }}
-                    style={styles.ecgImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.noImageContainer}>
-                    <Text style={styles.noImageText}>📈 ECG Waveform</Text>
-                    <Text style={styles.noImageSubText}>ยังไม่มี ECG Image</Text>
-                  </View>
-                )}
+                <Image
+                  source={patient.image || require("../../assets/images/normal.jpg")}
+                  style={styles.ecgImage}
+                  resizeMode="cover"
+                />
               </View>
             </View>
           );
@@ -445,34 +441,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
+  // ปรับแก้ขนาดและสัดส่วนกรอบภาพตรงนี้
   imageContainer: {
     width: "100%",
-    height: 105,
+    height: 135,
     backgroundColor: "#f1f5f9",
     borderRadius: 8,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#cbd5e1",
   },
   ecgImage: {
     width: "100%",
     height: "100%",
-  },
-
-  noImageContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noImageText: {
-    color: "#16a34a",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  noImageSubText: {
-    color: "#94a3b8",
-    fontSize: 10,
-    marginTop: 2,
   },
 
   loadingContainer: {
