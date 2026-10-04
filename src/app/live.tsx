@@ -1,4 +1,5 @@
 import {
+  useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
@@ -24,7 +25,7 @@ import {
 import { supabase } from "../../lib/supabase";
 
 // =====================================================
-// ข้อมูลผู้ป่วยเก่า (Mock Data)
+// ข้อมูลผู้ป่วยเก่า (Mock Data PT1 - PT5)
 // =====================================================
 
 const OLD_PATIENTS: Record<string, any> = {
@@ -225,6 +226,7 @@ const evaluateLevelFromHR = (hr: number | null, defaultLevel: string) => {
 
 type Patient = {
   id: string;
+  raw_db_id?: string;
   hn: string;
 
   name: string;
@@ -306,7 +308,7 @@ const VitalBox = ({
 );
 
 // =====================================================
-// LIVE SCREEN
+// LIVE SCREEN (src/app/live.tsx)
 // =====================================================
 
 export default function LiveScreen() {
@@ -325,11 +327,12 @@ export default function LiveScreen() {
   const [selectedId, setSelectedId] = useState<string>(paramKey || "PT1");
   const [loadingPatients, setLoadingPatients] = useState(true);
 
-  // ดึงข้อมูลผู้ป่วยรวมทั้ง HR, SpO2, BP จาก Supabase
+  // ดึงข้อมูลผู้ป่วย ซิงก์กับตาราง deleted_patients และป้องกัน Key/ID ซ้ำ
   const fetchPatients = useCallback(async () => {
     try {
       setLoadingPatients(true);
 
+      // 1. ดึงข้อมูลผู้ป่วยจาก Database
       const { data, error } = await supabase
         .from("patients")
         .select(
@@ -348,23 +351,35 @@ export default function LiveScreen() {
             created_at
           `
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
+
+      // 2. ดึงรายการ ID ที่ถูกลบในตาราง deleted_patients
+      const { data: deletedData } = await supabase
+        .from("deleted_patients")
+        .select("patient_id");
+
+      const deletedIds = new Set(
+        (deletedData || []).map((item: any) => String(item.patient_id))
+      );
 
       if (error) {
         console.error("Fetch Live Patients Error:", error);
-        const oldPatients = Object.values(OLD_PATIENTS).map(
-          (item: any): Patient => ({ ...item })
-        );
+        const oldPatients = Object.values(OLD_PATIENTS)
+          .map((item: any): Patient => ({ ...item }))
+          .filter((item) => !deletedIds.has(item.id));
         setPatients(oldPatients);
         return;
       }
 
-      const databasePatients: Patient[] = (data || []).map((item: any) => {
+      // แปลงข้อมูลจาก Supabase
+      const databasePatients: Patient[] = (data || []).map((item: any, index: number) => {
         const level = String(item.level || "NORMAL").toUpperCase();
         const style = getLevelStyle(level);
+        const customId = item.id?.startsWith("PT") ? item.id : `PT${6 + index}`;
 
         return {
-          id: String(item.id),
+          id: customId,
+          raw_db_id: String(item.id || ""),
           hn: String(item.hn || "-"),
           name: String(item.name || "-"),
           age: Number(item.age || 0),
@@ -383,27 +398,69 @@ export default function LiveScreen() {
         };
       });
 
-      const oldPatients: Patient[] = Object.values(OLD_PATIENTS);
-      const allPatients = [...oldPatients, ...databasePatients];
+      // เก็บ ID จาก DB เพื่อเช็คป้องกัน Mock Data ซ้ำ
+      const dbIds = new Set(databasePatients.map((p) => p.id));
+
+      // กรอง Mock Data: ตัดคนโดนลบ และคนที่มีอยู่ใน Database แล้วออก
+      const oldPatientsList = Object.values(OLD_PATIENTS).filter(
+        (item: any) => !deletedIds.has(item.id) && !dbIds.has(item.id)
+      );
+
+      // รวมรายการผู้ป่วยทั้งหมดแบบไม่มี ID ซ้ำ และไม่มีคนโดนลบ
+      const allPatients = [...oldPatientsList, ...databasePatients].filter(
+        (p) => !deletedIds.has(p.id)
+      );
 
       setPatients(allPatients);
+
+      // แมตช์หาผู้ป่วยจาก paramKey ที่ส่งเข้ามาทันทีที่ดึงข้อมูลเสร็จ
+      if (paramKey) {
+        const matched = allPatients.find(
+          (p) =>
+            p.id === paramKey ||
+            p.raw_db_id === paramKey ||
+            p.hn === paramKey
+        );
+        if (matched) {
+          setSelectedId(matched.id);
+        }
+      } else if (allPatients.length > 0) {
+        // ถ้าคนที่เลือกอยู่โดนลบไป ให้เลือกคนแรกของรายการ
+        setSelectedId((prev) => {
+          const exists = allPatients.some((p) => p.id === prev);
+          return exists ? prev : allPatients[0].id;
+        });
+      }
     } catch (e) {
       console.error("Fetch patients exception:", e);
     } finally {
       setLoadingPatients(false);
     }
-  }, []);
+  }, [paramKey]);
 
-  useEffect(() => {
-    fetchPatients();
-  }, [fetchPatients]);
+  // โหลดข้อมูลใหม่เมื่อผู้ใช้สลับมาหน้า Live Monitor
+  useFocusEffect(
+    useCallback(() => {
+      fetchPatients();
+    }, [fetchPatients])
+  );
 
   useEffect(() => {
     if (!paramKey) return;
-    setSelectedId(paramKey);
-  }, [paramKey]);
+    const matched = patients.find(
+      (p) =>
+        p.id === paramKey ||
+        p.raw_db_id === paramKey ||
+        p.hn === paramKey
+    );
+    if (matched) {
+      setSelectedId(matched.id);
+    } else {
+      setSelectedId(paramKey);
+    }
+  }, [paramKey, patients]);
 
-  // Realtime Listener ฟังการบันทึกหรือแก้ไขในตาราง patients
+  // Realtime Listener ฟังการเปลี่ยนแปลงในตาราง patients และ deleted_patients
   useEffect(() => {
     const channel = supabase
       .channel("live-patients-realtime")
@@ -414,9 +471,16 @@ export default function LiveScreen() {
           schema: "public",
           table: "patients",
         },
-        () => {
-          fetchPatients();
-        }
+        () => fetchPatients()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "deleted_patients",
+        },
+        () => fetchPatients()
       )
       .subscribe();
 
@@ -426,10 +490,15 @@ export default function LiveScreen() {
   }, [fetchPatients]);
 
   const patient = useMemo(() => {
-    const found = patients.find((item) => item.id === selectedId);
+    const found = patients.find(
+      (item) =>
+        item.id === selectedId ||
+        item.raw_db_id === selectedId ||
+        item.hn === selectedId
+    );
 
     if (!found) {
-      return patients.find((item) => item.id === "PT1") || null;
+      return patients.length > 0 ? patients[0] : null;
     }
 
     const finalLevel = evaluateLevelFromHR(found.hr, found.level);
@@ -537,12 +606,12 @@ export default function LiveScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8 }}
         >
-          {patients.map((item) => {
-            const isSelected = item.id === selectedId;
+          {patients.map((item, index) => {
+            const isSelected = item.id === patient.id;
 
             return (
               <TouchableOpacity
-                key={item.id}
+                key={`tab-${item.id}-${index}`}
                 onPress={() => setSelectedId(item.id)}
                 style={{
                   paddingVertical: 6,
@@ -572,14 +641,14 @@ export default function LiveScreen() {
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
           }}
         >
           <View style={{ flex: 1, paddingRight: 10 }}>
             <Text style={[S.badge, { backgroundColor: patient.color }]}>
               {patient.id}
             </Text>
-            <Text style={{ fontSize: 20, fontWeight: "bold", color: "#0f172a" }}>
+            <Text style={{ fontSize: 20, fontWeight: "bold", color: "#0f172a", marginTop: 2 }}>
               {patient.name}
             </Text>
             <Text style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>
@@ -806,9 +875,7 @@ export default function LiveScreen() {
 
       <View style={{ height: 30 }} />
 
-      {/* =================================================
-          Modal แสดงรูป ECG แบบซูมขยายได้ (Zoomable Full Screen)
-      ================================================= */}
+      {/* Modal แสดงรูป ECG แบบซูมขยายได้ */}
       <Modal
         visible={isModalVisible}
         transparent={true}
@@ -816,7 +883,6 @@ export default function LiveScreen() {
         onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={S.modalContainer}>
-          {/* ปุ่มปิด Modal */}
           <TouchableOpacity
             style={S.modalCloseButton}
             onPress={() => setIsModalVisible(false)}
@@ -824,10 +890,8 @@ export default function LiveScreen() {
             <Text style={S.modalCloseText}>✕ ปิด</Text>
           </TouchableOpacity>
 
-          {/* ข้อความแนะนำวิธีซูม */}
           <Text style={S.modalHintText}>🤏 จีบนิ้วเพื่อขยายรูปภาพ</Text>
 
-          {/* ScrollView ที่รองรับ Pinch to Zoom และ Scroll */}
           <ScrollView
             style={S.modalScrollView}
             contentContainerStyle={S.zoomScrollViewContent}

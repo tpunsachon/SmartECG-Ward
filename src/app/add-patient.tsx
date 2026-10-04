@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router'; // 👈 1. Import useFocusEffect
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 
@@ -42,6 +42,28 @@ export default function AddPatientScreen() {
   // =========================
   const [ecgImage, setEcgImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // =========================
+  // Reset Form Function
+  // =========================
+  const resetForm = useCallback(() => {
+    setName('');
+    setAge('');
+    setGender('ชาย');
+    setHr('');
+    setSpo2('');
+    setBp('');
+    setStatus('Normal Sinus Rhythm');
+    setLevel('NORMAL');
+    setEcgImage(null);
+  }, []);
+
+  // 👈 2. ล้างข้อมูลในฟอร์มทุกครั้งที่เปิด/สลับมาหน้านี้
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+    }, [resetForm])
+  );
 
   // =========================
   // Pick ECG Image
@@ -145,9 +167,12 @@ export default function AddPatientScreen() {
 
       console.log('บันทึกผู้ป่วยสำเร็จ:', data);
 
+      // 👈 3. ล้างข้อมูลในฟอร์มหลังบันทึกสำเร็จ
+      resetForm();
+
       Alert.alert(
         'บันทึกสำเร็จ',
-        `เพิ่มข้อมูลผู้ป่วย ${name} เรียบร้อยแล้ว\nHN: ${hn}`,
+        `เพิ่มข้อมูลผู้ป่วย ${name.trim()} เรียบร้อยแล้ว\nHN: ${hn}`,
         [
           {
             text: 'ตกลง',

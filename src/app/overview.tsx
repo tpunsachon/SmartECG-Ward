@@ -11,6 +11,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  StyleSheet,
 } from 'react-native';
 
 import {
@@ -18,12 +20,11 @@ import {
   useFocusEffect,
 } from 'expo-router';
 
-import { supabase } from '../../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 
-// =====================================================
-// กำหนดระดับความสำคัญ
-// ยิ่งตัวเลขน้อย = ยิ่งอันตรายมาก
-// =====================================================
+import { supabase } from '../../lib/supabase';
 
 const SEVERITY_RANK: Record<string, number> = {
   EMERGENCY: 1,
@@ -31,14 +32,6 @@ const SEVERITY_RANK: Record<string, number> = {
   WARNING: 3,
   NORMAL: 4,
 };
-
-// =====================================================
-// ข้อมูลผู้ป่วยเก่า
-// PT1 - PT5
-//
-// ข้อมูลส่วนนี้ยังเก็บไว้ในระบบ
-// แต่จะไม่แสดง PT และ HN บนหน้า Overview
-// =====================================================
 
 const INITIAL_PATIENTS = [
   {
@@ -51,7 +44,6 @@ const INITIAL_PATIENTS = [
     status: 'AFib Detected',
     defaultHr: 112,
   },
-
   {
     id: 'PT2',
     hn: 'HN 65-11084',
@@ -62,7 +54,6 @@ const INITIAL_PATIENTS = [
     status: 'LVH Detected',
     defaultHr: 88,
   },
-
   {
     id: 'PT3',
     hn: 'HN 67-00129',
@@ -73,7 +64,6 @@ const INITIAL_PATIENTS = [
     status: 'Normal Sinus Rhythm',
     defaultHr: 72,
   },
-
   {
     id: 'PT4',
     hn: 'HN 64-08821',
@@ -84,7 +74,6 @@ const INITIAL_PATIENTS = [
     status: 'Ventricular Fibrillation (VFib)',
     defaultHr: 185,
   },
-
   {
     id: 'PT5',
     hn: 'HN 68-00512',
@@ -97,58 +86,27 @@ const INITIAL_PATIENTS = [
   },
 ];
 
-// =====================================================
-// Type ของผู้ป่วย
-// =====================================================
-
 type Patient = {
   id: string;
-
-  // เก็บไว้ใช้กับ Database
-  // แต่ไม่แสดงบนหน้า Overview
   hn: string;
-
   name: string;
   gender: string;
   age: number;
   level: string;
   status: string;
-
-  // ผู้ป่วยเก่าจะมีค่า defaultHr
   defaultHr?: number;
-
-  // HR จาก Realtime
   currentHr?: number | null;
-
-  // รูป ECG
   ecg_image?: string | null;
-
+  is_deleted?: boolean;
   created_at?: string;
 };
 
-// =====================================================
-// ฟังก์ชันประเมินระดับความอันตรายจาก HR
-// =====================================================
-
-const evaluatePatientStatus = (
-  hr: number | null,
-  defaultLevel: string
-) => {
-  // ---------------------------------------------------
-  // ยังไม่มี HR
-  // ---------------------------------------------------
-
+const evaluatePatientStatus = (hr: number | null, defaultLevel: string) => {
   if (hr === null) {
-    const level =
-      String(
-        defaultLevel || 'NORMAL'
-      ).toUpperCase();
-
+    const level = String(defaultLevel || 'NORMAL').toUpperCase();
     return {
-      level: level,
-
+      level,
       text: 'รอสัญญาณ...',
-
       color:
         level === 'EMERGENCY'
           ? '#991b1b'
@@ -157,7 +115,6 @@ const evaluatePatientStatus = (
           : level === 'WARNING'
           ? '#d97706'
           : '#16a34a',
-
       bg:
         level === 'EMERGENCY'
           ? '#ffe4e6'
@@ -166,126 +123,55 @@ const evaluatePatientStatus = (
           : level === 'WARNING'
           ? '#fffbeb'
           : '#f0fdf4',
-
-      rank:
-        SEVERITY_RANK[level] || 4,
+      rank: SEVERITY_RANK[level] || 4,
     };
   }
 
-  // ---------------------------------------------------
-  // EMERGENCY
-  // ---------------------------------------------------
-
-  if (
-    hr >= 140 ||
-    hr <= 40
-  ) {
+  if (hr >= 140 || hr <= 40) {
     return {
       level: 'EMERGENCY',
-
-      text:
-        'EMERGENCY (วิกฤตขั้นสูง)',
-
+      text: 'EMERGENCY (วิกฤตขั้นสูง)',
       color: '#991b1b',
-
       bg: '#ffe4e6',
-
-      rank:
-        SEVERITY_RANK.EMERGENCY,
+      rank: SEVERITY_RANK.EMERGENCY,
     };
   }
 
-  // ---------------------------------------------------
-  // CRITICAL
-  // ---------------------------------------------------
-
-  if (
-    hr > 100 ||
-    hr < 50
-  ) {
+  if (hr > 100 || hr < 50) {
     return {
       level: 'CRITICAL',
-
-      text:
-        'CRITICAL (เสี่ยงสูง)',
-
+      text: 'CRITICAL (เสี่ยงสูง)',
       color: '#dc2626',
-
       bg: '#fef2f2',
-
-      rank:
-        SEVERITY_RANK.CRITICAL,
+      rank: SEVERITY_RANK.CRITICAL,
     };
   }
-
-  // ---------------------------------------------------
-  // WARNING
-  // ---------------------------------------------------
 
   if (hr < 60) {
     return {
       level: 'WARNING',
-
-      text:
-        'WARNING (ช้ากว่าเกณฑ์)',
-
+      text: 'WARNING (ช้ากว่าเกณฑ์)',
       color: '#d97706',
-
       bg: '#fffbeb',
-
-      rank:
-        SEVERITY_RANK.WARNING,
+      rank: SEVERITY_RANK.WARNING,
     };
   }
 
-  // ---------------------------------------------------
-  // NORMAL
-  // ---------------------------------------------------
-
   return {
     level: 'NORMAL',
-
     text: 'NORMAL (ปกติ)',
-
     color: '#16a34a',
-
     bg: '#f0fdf4',
-
-    rank:
-      SEVERITY_RANK.NORMAL,
+    rank: SEVERITY_RANK.NORMAL,
   };
 };
-
-// =====================================================
-// Overview Screen
-// =====================================================
 
 export default function OverviewScreen() {
   const router = useRouter();
 
-  // ===================================================
-  // ผู้ป่วยทั้งหมด
-  //
-  // ประกอบด้วย
-  // 1. PT1 - PT5
-  // 2. ผู้ป่วยใหม่จาก Supabase
-  // ===================================================
-
-  const [
-    patients,
-    setPatients,
-  ] = useState<Patient[]>(
-    INITIAL_PATIENTS
-  );
-
-  // ===================================================
-  // HR ของผู้ป่วย
-  // ===================================================
-
-  const [
-    patientHRs,
-    setPatientHRs,
-  ] = useState<Record<string, number>>({
+  const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
+  const [deletedLocalIds, setDeletedLocalIds] = useState<string[]>([]);
+  const [patientHRs, setPatientHRs] = useState<Record<string, number>>({
     PT1: 112,
     PT2: 88,
     PT3: 72,
@@ -293,242 +179,94 @@ export default function OverviewScreen() {
     PT5: 75,
   });
 
-  // ===================================================
-  // ผู้ป่วยที่ถูกเลือก
-  // ===================================================
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('PT4');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [
-    selectedPatientId,
-    setSelectedPatientId,
-  ] = useState<string>('PT4');
-
-  // ===================================================
-  // Loading
-  // ===================================================
-
-  const [
-    loading,
-    setLoading,
-  ] = useState<boolean>(true);
-
-  // ===================================================
-  // Error
-  // ===================================================
-
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] = useState<string | null>(
-    null
-  );
-
-  // ===================================================
-  // ดึงข้อมูลผู้ป่วยจาก Supabase
-  // ===================================================
-
-  const fetchPatients =
-    useCallback(async () => {
-      try {
-        setLoading(true);
-
-        setErrorMessage(null);
-
-        console.log(
-          'กำลังโหลดข้อมูลผู้ป่วยจาก Supabase...'
-        );
-
-        const {
-          data,
-          error,
-        } = await supabase
-          .from('patients')
-          .select(
-            `
-            id,
-            hn,
-            name,
-            age,
-            gender,
-            level,
-            status,
-            ecg_image,
-            created_at
-          `
-          )
-          .order(
-            'created_at',
-            {
-              ascending: false,
-            }
-          );
-
-        // =================================================
-        // ถ้า Supabase Error
-        // =================================================
-
-        if (error) {
-          console.error(
-            'Fetch Patients Error:',
-            error
-          );
-
-          setErrorMessage(
-            error.message
-          );
-
-          // ยังแสดงข้อมูลเก่า
-          setPatients(
-            INITIAL_PATIENTS
-          );
-
-          return;
-        }
-
-        // =================================================
-        // แปลงข้อมูลจาก Supabase
-        // =================================================
-
-        const databasePatients:
-          Patient[] =
-          (data || []).map(
-            (item: any) => ({
-              id: String(
-                item.id
-              ),
-
-              hn: String(
-                item.hn || '-'
-              ),
-
-              name: String(
-                item.name || '-'
-              ),
-
-              gender: String(
-                item.gender || '-'
-              ),
-
-              age: Number(
-                item.age || 0
-              ),
-
-              level: String(
-                item.level ||
-                  'NORMAL'
-              ).toUpperCase(),
-
-              status: String(
-                item.status ||
-                  'Normal Sinus Rhythm'
-              ),
-
-              ecg_image:
-                item.ecg_image ||
-                null,
-
-              created_at:
-                item.created_at ||
-                undefined,
-
-              // ผู้ป่วยใหม่ยังไม่มี HR เริ่มต้น
-              defaultHr:
-                undefined,
-            })
-          );
-
-        // =================================================
-        // รวมข้อมูลเก่า + ข้อมูลใหม่
-        // =================================================
-
-        const allPatients:
-          Patient[] = [
-            ...INITIAL_PATIENTS,
-            ...databasePatients,
-          ];
-
-        console.log(
-          'ผู้ป่วยเก่า:',
-          INITIAL_PATIENTS.length
-        );
-
-        console.log(
-          'ผู้ป่วยจาก Supabase:',
-          databasePatients.length
-        );
-
-        console.log(
-          'ผู้ป่วยทั้งหมด:',
-          allPatients.length
-        );
-
-        setPatients(
-          allPatients
-        );
-
-        // =================================================
-        // เลือกผู้ป่วย
-        // =================================================
-
-        setSelectedPatientId(
-          (current) => {
-            const currentExists =
-              allPatients.some(
-                (patient) =>
-                  patient.id ===
-                  current
-              );
-
-            if (
-              currentExists
-            ) {
-              return current;
-            }
-
-            const pt4Exists =
-              allPatients.some(
-                (patient) =>
-                  patient.id ===
-                  'PT4'
-              );
-
-            if (
-              pt4Exists
-            ) {
-              return 'PT4';
-            }
-
-            return (
-              allPatients[0]?.id ||
-              ''
-            );
-          }
-        );
-
-      } catch (
-        error: any
-      ) {
-        console.error(
-          'Fetch Patients Exception:',
-          error
-        );
-
-        setErrorMessage(
-          error?.message ||
-            'ไม่สามารถโหลดข้อมูลผู้ป่วยได้'
-        );
-
-        setPatients(
-          INITIAL_PATIENTS
-        );
-
-      } finally {
-        setLoading(false);
+  // ดึงรายการ ID ผู้ป่วยจำลองที่เคยถูกลบจาก AsyncStorage
+  const loadDeletedLocalIds = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('DELETED_PATIENT_IDS');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setDeletedLocalIds(parsed);
+        return parsed;
       }
-    }, []);
+    } catch (e) {
+      console.error('Error loading deleted IDs:', e);
+    }
+    return [];
+  };
 
-  // ===================================================
-  // โหลดข้อมูลทุกครั้งที่กลับเข้าหน้า Overview
-  // ===================================================
+  // ดึงข้อมูลผู้ป่วย
+  const fetchPatients = useCallback(async () => {
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+
+      const currentDeletedIds = await loadDeletedLocalIds();
+
+      // ดึงเฉพาะผู้ป่วยใน Supabase ที่ไม่ถูกลบ
+      const { data, error } = await supabase
+        .from('patients')
+        .select(`
+          id,
+          hn,
+          name,
+          age,
+          gender,
+          level,
+          status,
+          ecg_image,
+          is_deleted,
+          created_at
+        `)
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Fetch Patients Error:', error);
+        setErrorMessage(error.message);
+        setPatients(INITIAL_PATIENTS.filter(p => !currentDeletedIds.includes(p.id)));
+        return;
+      }
+
+      const databasePatients: Patient[] = (data || []).map((item: any) => ({
+        id: String(item.id),
+        hn: String(item.hn || '-'),
+        name: String(item.name || '-'),
+        gender: String(item.gender || '-'),
+        age: Number(item.age || 0),
+        level: String(item.level || 'NORMAL').toUpperCase(),
+        status: String(item.status || 'Normal Sinus Rhythm'),
+        ecg_image: item.ecg_image || null,
+        is_deleted: item.is_deleted || false,
+        created_at: item.created_at || undefined,
+      }));
+
+      const activeInitialPatients = INITIAL_PATIENTS.filter(
+        (p) => !currentDeletedIds.includes(p.id)
+      );
+
+      const allPatients: Patient[] = [
+        ...activeInitialPatients,
+        ...databasePatients,
+      ];
+
+      setPatients(allPatients);
+
+      setSelectedPatientId((current) => {
+        const currentExists = allPatients.some((patient) => patient.id === current);
+        if (currentExists) return current;
+        return allPatients[0]?.id || '';
+      });
+    } catch (error: any) {
+      console.error('Fetch Patients Exception:', error);
+      setErrorMessage(error?.message || 'ไม่สามารถโหลดข้อมูลผู้ป่วยได้');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -536,865 +274,271 @@ export default function OverviewScreen() {
     }, [fetchPatients])
   );
 
-  // ===================================================
-  // Supabase Realtime
-  //
-  // รับ HR จาก patient_monitors
-  // ===================================================
+  // Soft Delete
+  const handleSoftDelete = (patient: Patient) => {
+    Alert.alert(
+      'ยืนยันการลบ',
+      `คุณต้องการลบข้อมูลของ "${patient.name}" ใช่หรือไม่?`,
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ลบข้อมูล',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!patient.id.startsWith('PT')) {
+                // ลบใน Supabase
+                const { error } = await supabase
+                  .from('patients')
+                  .update({
+                    is_deleted: true,
+                    deleted_at: new Date().toISOString(),
+                  })
+                  .eq('id', patient.id);
+
+                if (error) {
+                  Alert.alert('เกิดข้อผิดพลาด', error.message);
+                  return;
+                }
+              } else {
+                // บันทึกลง AsyncStorage สำหรับ PT1-PT5
+                const updatedDeleted = [...deletedLocalIds, patient.id];
+                setDeletedLocalIds(updatedDeleted);
+                await AsyncStorage.setItem('DELETED_PATIENT_IDS', JSON.stringify(updatedDeleted));
+              }
+
+              // อัปเดต UI ทันที
+              setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+
+              if (selectedPatientId === patient.id) {
+                const remaining = patients.filter((p) => p.id !== patient.id);
+                if (remaining.length > 0) {
+                  setSelectedPatientId(remaining[0].id);
+                }
+              }
+            } catch (err: any) {
+              console.error('Soft delete error:', err);
+              Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
-    console.log(
-      'เริ่มเชื่อมต่อ Patient Monitor Realtime...'
-    );
+    const channel = supabase
+      .channel('ward-realtime-hr')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'patient_monitors',
+        },
+        (payload) => {
+          const patientId = payload.new?.patient_id;
+          const hr = payload.new?.hr;
 
-    const channel =
-      supabase
-        .channel(
-          'ward-realtime-hr'
-        )
-
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-
-            schema: 'public',
-
-            table:
-              'patient_monitors',
-          },
-
-          (payload) => {
-            console.log(
-              'Realtime Monitor:',
-              payload.new
-            );
-
-            const patientId =
-              payload.new
-                ?.patient_id;
-
-            const hr =
-              payload.new?.hr;
-
-            if (
-              patientId !==
-                null &&
-              patientId !==
-                undefined &&
-              hr !== null &&
-              hr !== undefined
-            ) {
-              setPatientHRs(
-                (previous) => ({
-                  ...previous,
-
-                  [String(
-                    patientId
-                  )]:
-                    Number(hr),
-                })
-              );
-            }
+          if (patientId && hr !== null) {
+            setPatientHRs((previous) => ({
+              ...previous,
+              [String(patientId)]: Number(hr),
+            }));
           }
-        )
+        }
+      )
+      .subscribe();
 
-        .subscribe(
-          (status) => {
-            console.log(
-              'Realtime status:',
-              status
-            );
-          }
-        );
-
-    // Cleanup
     return () => {
-      console.log(
-        'ปิด Patient Monitor Realtime'
-      );
-
-      supabase.removeChannel(
-        channel
-      );
+      supabase.removeChannel(channel);
     };
   }, []);
 
-  // ===================================================
-  // รวม Patient + HR
-  // แล้วเรียงตามระดับความอันตราย
-  //
-  // หมายเหตุ:
-  // ระบบยังใช้ level / HR อยู่
-  // แต่จะไม่แสดงใน Patient Card
-  // ===================================================
+  const sortedPatients = useMemo(() => {
+    return patients
+      .map((patient) => {
+        const currentHr = patientHRs[patient.id] ?? patient.defaultHr ?? null;
+        const evalResult = evaluatePatientStatus(currentHr, patient.level);
 
-  const sortedPatients =
-    useMemo(() => {
-      return patients
-        .map((patient) => {
-          const currentHr =
-            patientHRs[
-              patient.id
-            ] ??
-            patient.defaultHr ??
-            null;
-
-          const evalResult =
-            evaluatePatientStatus(
-              currentHr,
-              patient.level
-            );
-
-          return {
-            ...patient,
-
-            currentHr,
-
-            evalResult,
-          };
-        })
-
-        .sort(
-          (a, b) =>
-            a.evalResult.rank -
-            b.evalResult.rank
-        );
-    }, [
-      patients,
-      patientHRs,
-    ]);
-
-  // ===================================================
-  // ผู้ป่วยที่เลือก
-  // ===================================================
+        return {
+          ...patient,
+          currentHr,
+          evalResult,
+        };
+      })
+      .sort((a, b) => a.evalResult.rank - b.evalResult.rank);
+  }, [patients, patientHRs]);
 
   const selectedPatient =
-    sortedPatients.find(
-      (patient) =>
-        patient.id ===
-        selectedPatientId
-    ) ||
-    sortedPatients.find(
-      (patient) =>
-        patient.id === 'PT4'
-    ) ||
+    sortedPatients.find((patient) => patient.id === selectedPatientId) ||
     sortedPatients[0];
 
-  // ===================================================
-  // UI
-  // ===================================================
+  const renderRightActions = (patient: Patient) => {
+    return (
+      <TouchableOpacity
+        style={styles.deleteSwipeButton}
+        onPress={() => handleSoftDelete(patient)}
+      >
+        <Text style={styles.deleteSwipeText}>🗑️ ลบ</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <ScrollView
-      style={{
-        flex: 1,
-
-        backgroundColor:
-          '#f8fafc',
-
-        padding: 16,
-      }}
-    >
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
-
-      <View
-        style={{
-          flexDirection:
-            'row',
-
-          justifyContent:
-            'space-between',
-
-          alignItems:
-            'center',
-
-          marginBottom: 16,
-        }}
-      >
-
-        <Text
-          style={{
-            fontSize: 20,
-
-            fontWeight:
-              'bold',
-
-            color:
-              '#0f172a',
-          }}
-        >
-          🏥 Ward Monitoring
-        </Text>
-
-        <TouchableOpacity
-          style={{
-            backgroundColor:
-              '#ef4444',
-
-            paddingHorizontal:
-              12,
-
-            paddingVertical:
-              6,
-
-            borderRadius: 6,
-          }}
-          onPress={() =>
-            router.replace(
-              '/login'
-            )
-          }
-        >
-          <Text
-            style={{
-              color: '#fff',
-
-              fontSize: 12,
-
-              fontWeight:
-                'bold',
-            }}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc', padding: 16 }}>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>🏥 Ward Monitoring</Text>
+          <TouchableOpacity
+            style={styles.signOutBtn}
+            onPress={() => router.replace('/login')}
           >
-            Sign Out
-          </Text>
-        </TouchableOpacity>
-
-      </View>
-
-      {/* =================================================
-          LOADING
-      ================================================= */}
-
-      {loading && (
-        <View
-          style={{
-            backgroundColor:
-              '#ffffff',
-
-            borderRadius: 12,
-
-            padding: 25,
-
-            alignItems:
-              'center',
-
-            marginBottom: 16,
-
-            borderWidth: 1,
-
-            borderColor:
-              '#e2e8f0',
-          }}
-        >
-
-          <ActivityIndicator
-            size="large"
-            color="#0284c7"
-          />
-
-          <Text
-            style={{
-              marginTop: 10,
-
-              color:
-                '#64748b',
-
-              fontSize: 13,
-            }}
-          >
-            กำลังโหลดข้อมูลผู้ป่วย...
-          </Text>
-
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* =================================================
-          ERROR
-      ================================================= */}
-
-      {!loading &&
-        errorMessage && (
-          <View
-            style={{
-              backgroundColor:
-                '#fef2f2',
-
-              borderWidth: 1,
-
-              borderColor:
-                '#fca5a5',
-
-              borderRadius: 10,
-
-              padding: 12,
-
-              marginBottom: 16,
-            }}
-          >
-
-            <Text
-              style={{
-                color:
-                  '#dc2626',
-
-                fontWeight:
-                  'bold',
-
-                fontSize: 12,
-              }}
-            >
-              ⚠️ ไม่สามารถโหลดข้อมูล
-              จาก Supabase ได้
+        {loading && (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#0284c7" />
+            <Text style={{ marginTop: 10, color: '#64748b', fontSize: 13 }}>
+              กำลังโหลดข้อมูลผู้ป่วย...
             </Text>
-
-            <Text
-              style={{
-                color:
-                  '#7f1d1d',
-
-                fontSize: 11,
-
-                marginTop: 4,
-              }}
-            >
-              {errorMessage}
-            </Text>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor:
-                  '#dc2626',
-
-                paddingVertical:
-                  7,
-
-                paddingHorizontal:
-                  10,
-
-                borderRadius: 6,
-
-                alignSelf:
-                  'flex-start',
-
-                marginTop: 8,
-              }}
-              onPress={
-                fetchPatients
-              }
-            >
-
-              <Text
-                style={{
-                  color:
-                    '#fff',
-
-                  fontSize: 11,
-
-                  fontWeight:
-                    'bold',
-                }}
-              >
-                ลองใหม่
-              </Text>
-
-            </TouchableOpacity>
-
           </View>
         )}
 
-      {/* =================================================
-          LIVE SENSOR MONITORING
-          
-          ส่วนนี้ยังคง HR ได้
-          เพราะเป็นส่วน Monitor
-      ================================================= */}
-
-      {selectedPatient && (
-        <View
-          style={[
-            S.largeHrCard,
-
-            {
-              backgroundColor:
-                selectedPatient
-                  .evalResult
-                  .bg,
-
-              borderColor:
-                selectedPatient
-                  .evalResult
-                  .color,
-            },
-          ]}
-        >
-
-          <Text
-            style={{
-              fontSize: 12.35,
-
-              fontWeight:
-                'bold',
-
-              color:
-                '#64748b',
-
-              textAlign:
-                'center',
-            }}
-          >
-            LIVE SENSOR MONITORING
-            {' ('}
-            {selectedPatient.name}
-            {')'}
-          </Text>
-
-          <View
-            style={{
-              flexDirection:
-                'row',
-
-              alignItems:
-                'baseline',
-
-              marginVertical:
-                7.6,
-            }}
-          >
-
-            <Text
-              style={{
-                fontSize:
-                  60.8,
-
-                fontWeight:
-                  'bold',
-
-                color:
-                  selectedPatient
-                    .evalResult
-                    .color,
-              }}
-            >
-              {selectedPatient.currentHr ??
-                '--'}
+        {!loading && errorMessage && (
+          <View style={styles.errorBox}>
+            <Text style={{ color: '#dc2626', fontWeight: 'bold', fontSize: 12 }}>
+              ⚠️ ไม่สามารถโหลดข้อมูล จาก Supabase ได้
             </Text>
-
-            <Text
-              style={{
-                fontSize: 19,
-
-                fontWeight:
-                  'bold',
-
-                color:
-                  '#64748b',
-
-                marginLeft: 7.6,
-              }}
-            >
-              BPM
+            <Text style={{ color: '#7f1d1d', fontSize: 11, marginTop: 4 }}>
+              {errorMessage}
             </Text>
-
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchPatients}>
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}>
+                ลองใหม่
+              </Text>
+            </TouchableOpacity>
           </View>
+        )}
 
+        {selectedPatient && (
           <View
-            style={{
-              backgroundColor:
-                selectedPatient
-                  .evalResult
-                  .color,
-
-              paddingHorizontal:
-                13.3,
-
-              paddingVertical:
-                3.8,
-
-              borderRadius: 19,
-            }}
-          >
-
-            <Text
-              style={{
-                color: '#fff',
-
-                fontSize:
-                  11.4,
-
-                fontWeight:
-                  'bold',
-              }}
-            >
+            style={[
+              S.largeHrCard,
               {
-                selectedPatient
-                  .evalResult
-                  .text
-              }
+                backgroundColor: selectedPatient.evalResult.bg,
+                borderColor: selectedPatient.evalResult.color,
+              },
+            ]}
+          >
+            <Text style={{ fontSize: 12.35, fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>
+              LIVE SENSOR MONITORING ({selectedPatient.name})
             </Text>
 
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 7.6 }}>
+              <Text style={{ fontSize: 60.8, fontWeight: 'bold', color: selectedPatient.evalResult.color }}>
+                {selectedPatient.currentHr ?? '--'}
+              </Text>
+              <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#64748b', marginLeft: 7.6 }}>
+                BPM
+              </Text>
+            </View>
+
+            <View style={{ backgroundColor: selectedPatient.evalResult.color, paddingHorizontal: 13.3, paddingVertical: 3.8, borderRadius: 19 }}>
+              <Text style={{ color: '#fff', fontSize: 11.4, fontWeight: 'bold' }}>
+                {selectedPatient.evalResult.text}
+              </Text>
+            </View>
           </View>
+        )}
 
+        <View style={styles.sectionHeader}>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
+            รายชื่อผู้ป่วย (ปัดซ้ายเพื่อลบ)
+          </Text>
+          <TouchableOpacity style={S.addPatientBtn} onPress={() => router.push('/add-patient')}>
+            <Text style={S.addPatientText}>＋ Add New Patient</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* =================================================
-          รายชื่อผู้ป่วย + ADD
-      ================================================= */}
-
-      <View
-        style={{
-          flexDirection:
-            'row',
-
-          justifyContent:
-            'space-between',
-
-          alignItems:
-            'center',
-
-          marginBottom: 12,
-        }}
-      >
-
-        <Text
-          style={{
-            fontSize: 16,
-
-            fontWeight:
-              'bold',
-
-            color:
-              '#0f172a',
-
-            flex: 1,
-          }}
-        >
-          รายชื่อผู้ป่วย
+        <Text style={{ color: '#64748b', fontSize: 11, marginBottom: 8 }}>
+          ผู้ป่วยทั้งหมด {sortedPatients.length} คน
         </Text>
 
-        <TouchableOpacity
-          style={
-            S.addPatientBtn
-          }
-          onPress={() =>
-            router.push(
-              '/add-patient'
-            )
-          }
-        >
-
-          <Text
-            style={
-              S.addPatientText
-            }
-          >
-            ＋ Add New Patient
-          </Text>
-
-        </TouchableOpacity>
-
-      </View>
-
-      {/* =================================================
-          จำนวนผู้ป่วย
-      ================================================= */}
-
-      <Text
-        style={{
-          color:
-            '#64748b',
-
-          fontSize: 11,
-
-          marginBottom: 8,
-        }}
-      >
-        ผู้ป่วยทั้งหมด{' '}
-        {sortedPatients.length}{' '}
-        คน
-      </Text>
-
-      {/* =================================================
-          รายชื่อผู้ป่วย
-          
-          แสดงเฉพาะ:
-          - ชื่อ
-          - เพศ
-          - อายุ
-          - ดูข้อมูล
-
-          ไม่แสดง:
-          - PT
-          - HN
-          - UUID
-          - EMERGENCY
-          - CRITICAL
-          - WARNING
-          - NORMAL
-          - HR
-          - Status
-      ================================================= */}
-
-      {sortedPatients.map(
-        (patient) => {
-
-          const isSelected =
-            patient.id ===
-            selectedPatientId;
+        {sortedPatients.map((patient) => {
+          const isSelected = patient.id === selectedPatientId;
 
           return (
-            <TouchableOpacity
+            <Swipeable
               key={patient.id}
-
-              style={[
-                S.patientNameCard,
-
-                {
-                  borderLeftColor:
-                    patient
-                      .evalResult
-                      .color,
-
-                  borderLeftWidth: 6,
-                },
-
-                isSelected &&
-                  S.selectedCard,
-              ]}
-
-              onPress={() =>
-                setSelectedPatientId(
-                  patient.id
-                )
-              }
+              renderRightActions={() => renderRightActions(patient)}
+              overshootRight={false}
             >
-
-              {/* =========================================
-                  ข้อมูลผู้ป่วย
-              ========================================= */}
-
-              <View
-                style={{
-                  flex: 1,
-
-                  paddingRight: 8,
-                }}
-              >
-
-                {/* ชื่อผู้ป่วย */}
-                <Text
-                  style={{
-                    fontSize: 16,
-
-                    fontWeight:
-                      'bold',
-
-                    color:
-                      '#0f172a',
-                  }}
-                >
-                  {patient.name}
-                </Text>
-
-                {/* เพศ + อายุ */}
-                <Text
-                  style={{
-                    fontSize: 12,
-
-                    color:
-                      '#64748b',
-
-                    marginTop: 2,
-                  }}
-                >
-                  {patient.gender}
-                  {' • '}
-                  {patient.age}
-                  {' ปี'}
-                </Text>
-
-              </View>
-
-              {/* =========================================
-                  ปุ่มดูข้อมูล
-              ========================================= */}
-
               <TouchableOpacity
-                style={
-                  S.detailBtn
-                }
-
-                onPress={() =>
-                  router.push({
-                    pathname:
-                      '/live',
-
-                    params: {
-                      patientId:
-                        patient.id,
-                    },
-                  })
-                }
+                activeOpacity={0.9}
+                style={[
+                  S.patientNameCard,
+                  {
+                    borderLeftColor: patient.evalResult.color,
+                    borderLeftWidth: 6,
+                  },
+                  isSelected && S.selectedCard,
+                ]}
+                onPress={() => setSelectedPatientId(patient.id)}
               >
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0f172a' }}>
+                    {patient.name}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                    {patient.gender} • {patient.age} ปี
+                  </Text>
+                </View>
 
-                <Text
-                  style={{
-                    color:
-                      '#0284c7',
-
-                    fontWeight:
-                      'bold',
-
-                    fontSize: 13,
-                  }}
+                <TouchableOpacity
+                  style={S.detailBtn}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/live',
+                      params: { patientId: patient.id },
+                    })
+                  }
                 >
-                  ดูข้อมูล ➔
-                </Text>
-
+                  <Text style={{ color: '#0284c7', fontWeight: 'bold', fontSize: 13 }}>
+                    ดูข้อมูล ➔
+                  </Text>
+                </TouchableOpacity>
               </TouchableOpacity>
-
-            </TouchableOpacity>
+            </Swipeable>
           );
-        }
-      )}
+        })}
 
-      {/* =================================================
-          พื้นที่ด้านล่าง
-      ================================================= */}
-
-      <View
-        style={{
-          height: 30,
-        }}
-      />
-
-    </ScrollView>
+        <View style={{ height: 30 }} />
+      </ScrollView>
+    </GestureHandlerRootView>
   );
 }
 
-// =====================================================
-// STYLES
-// =====================================================
+const styles = StyleSheet.create({
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#0f172a' },
+  signOutBtn: { backgroundColor: '#ef4444', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  signOutText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  loadingBox: { backgroundColor: '#ffffff', borderRadius: 12, padding: 25, alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0' },
+  errorBox: { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5', borderRadius: 10, padding: 12, marginBottom: 16 },
+  retryBtn: { backgroundColor: '#dc2626', paddingVertical: 7, paddingHorizontal: 10, borderRadius: 6, alignSelf: 'flex-start', marginTop: 8 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  deleteSwipeButton: { backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center', width: 80, height: '84%', borderRadius: 12, marginBottom: 10 },
+  deleteSwipeText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
+});
 
 const S = {
-
-  // ===================================================
-  // กล่อง HR ด้านบน
-  // ===================================================
-
-  largeHrCard: {
-    padding: 19,
-
-    borderRadius: 15.2,
-
-    borderWidth: 2,
-
-    alignItems:
-      'center' as const,
-
-    justifyContent:
-      'center' as const,
-
-    marginBottom: 19,
-
-    shadowColor: '#000',
-
-    shadowOffset: {
-      width: 0,
-
-      height: 2,
-    },
-
-    shadowOpacity:
-      0.05,
-
-    shadowRadius: 4,
-
-    elevation: 3,
-  },
-
-  // ===================================================
-  // การ์ดผู้ป่วย
-  // ===================================================
-
-  patientNameCard: {
-    backgroundColor:
-      '#ffffff',
-
-    padding: 14,
-
-    borderRadius: 12,
-
-    marginBottom: 10,
-
-    borderWidth: 1,
-
-    borderColor:
-      '#e2e8f0',
-
-    flexDirection:
-      'row' as const,
-
-    justifyContent:
-      'space-between' as const,
-
-    alignItems:
-      'center' as const,
-  },
-
-  // ===================================================
-  // การ์ดที่เลือก
-  // ===================================================
-
-  selectedCard: {
-    backgroundColor:
-      '#fcfcfc',
-
-    borderColor:
-      '#177bad',
-  },
-
-  // ===================================================
-  // ปุ่มดูข้อมูล
-  // ===================================================
-
-  detailBtn: {
-    paddingVertical: 6,
-
-    paddingHorizontal: 8,
-  },
-
-  // ===================================================
-  // ปุ่ม Add Patient
-  // ===================================================
-
-  addPatientBtn: {
-    backgroundColor:
-      '#0284c7',
-
-    paddingVertical: 8,
-
-    paddingHorizontal: 10,
-
-    borderRadius: 8,
-
-    marginLeft: 8,
-  },
-
-  // ===================================================
-  // ข้อความปุ่ม Add Patient
-  // ===================================================
-
-  addPatientText: {
-    color: '#ffffff',
-
-    fontSize: 11,
-
-    fontWeight:
-      'bold',
-  },
+  largeHrCard: { padding: 19, borderRadius: 15.2, borderWidth: 2, alignItems: 'center' as const, justifyContent: 'center' as const, marginBottom: 19, elevation: 3 },
+  patientNameCard: { backgroundColor: '#ffffff', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0', flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+  selectedCard: { backgroundColor: '#fcfcfc', borderColor: '#177bad' },
+  detailBtn: { paddingVertical: 6, paddingHorizontal: 8 },
+  addPatientBtn: { backgroundColor: '#0284c7', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, marginLeft: 8 },
+  addPatientText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
 };

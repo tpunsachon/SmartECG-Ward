@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -12,11 +7,11 @@ import {
   Text,
   View,
 } from "react-native";
-
+import { useFocusEffect } from "expo-router";
 import { supabase } from "../../lib/supabase";
 
 // =====================================================
-// ผู้ป่วยเก่า
+// ผู้ป่วยเก่า (Mock Data - ยังคงไว้เหมือนเดิม)
 // =====================================================
 
 const OLD_PATIENTS = [
@@ -150,8 +145,7 @@ export default function SummaryScreen() {
 
   const fetchPatients = useCallback(async () => {
     try {
-      setLoading(true);
-
+      // 1. ดึงข้อมูลจากตาราง patients
       const { data, error } = await supabase
         .from("patients")
         .select(
@@ -168,12 +162,25 @@ export default function SummaryScreen() {
         )
         .order("created_at", { ascending: true });
 
+      // 2. ดึงรายชื่อ ID ของผู้ป่วยที่ถูกสั่งลบแล้ว
+      const { data: deletedData } = await supabase
+        .from("deleted_patients")
+        .select("patient_id");
+
+      const deletedIds = new Set(
+        (deletedData || []).map((item: any) => String(item.patient_id))
+      );
+
       if (error) {
         console.error("Summary fetch error:", error);
-        setPatients(OLD_PATIENTS as Patient[]);
+        const activeOldPatients = (OLD_PATIENTS as Patient[]).filter(
+          (p) => !deletedIds.has(p.id)
+        );
+        setPatients(activeOldPatients);
         return;
       }
 
+      // แปลงข้อมูลจาก Supabase
       const databasePatients: Patient[] = (data || []).map((item: any) => {
         const level = String(item.level || "NORMAL").toUpperCase();
         const style = getLevelStyle(level);
@@ -193,25 +200,58 @@ export default function SummaryScreen() {
         };
       });
 
+      // เก็บ ID ทั้งหมดที่มีอยู่ใน DB
+      const dbIds = new Set(databasePatients.map((p) => p.id));
+
+      // กรอง Mock Patients: ตัดคนโดนลบ และคนที่มีอยู่ใน DB เพื่อป้องกัน ID ซ้ำกัน
+      const activeOldPatients = (OLD_PATIENTS as Patient[]).filter(
+        (p) => !deletedIds.has(p.id) && !dbIds.has(p.id)
+      );
+
+      // รวม Mock + Database โดยตัด ID ที่ถูกสั่งลบออก
       const allPatients: Patient[] = [
-        ...(OLD_PATIENTS as Patient[]),
+        ...activeOldPatients,
         ...databasePatients,
-      ];
+      ].filter((p) => !deletedIds.has(p.id));
 
       setPatients(allPatients);
     } catch (error) {
       console.error("Summary exception:", error);
-      setPatients(OLD_PATIENTS as Patient[]);
+      setPatients((OLD_PATIENTS as Patient[]).filter((p) => p.id));
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // ดึงข้อมูลใหม่ทุกครั้งที่เปิด/สลับกดเข้าหน้า Tab Summary
+  useFocusEffect(
+    useCallback(() => {
+      fetchPatients();
+    }, [fetchPatients])
+  );
+
+  // ดักฟังการอัปเดตข้อมูลแบบ Realtime จากตาราง patients และ deleted_patients
   useEffect(() => {
-    fetchPatients();
+    const channel = supabase
+      .channel("summary-patients-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "patients" },
+        () => fetchPatients()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deleted_patients" },
+        () => fetchPatients()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchPatients]);
 
-  if (loading) {
+  if (loading && patients.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0284c7" />
@@ -222,10 +262,6 @@ export default function SummaryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* =================================================
-          Content
-      ================================================= */}
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -236,14 +272,11 @@ export default function SummaryScreen() {
           ผู้ป่วยทั้งหมด {patients.length} คน
         </Text>
 
-        {/* =================================================
-            Patient Cards
-        ================================================= */}
-
-        {patients.map((patient) => {
+        {/* Patient Cards */}
+        {patients.map((patient, index) => {
           return (
             <View
-              key={patient.id}
+              key={`summary-pt-${patient.id}-${index}`}
               style={[
                 styles.patientCard,
                 {
@@ -332,7 +365,7 @@ export default function SummaryScreen() {
 }
 
 // =====================================================
-// STYLES (ปรับขนาดให้ใหญ่ขึ้นปานกลาง)
+// STYLES
 // =====================================================
 
 const styles = StyleSheet.create({
@@ -355,7 +388,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // Patient Card ขนาดพอดีคำ
   patientCard: {
     backgroundColor: "#ffffff",
     borderRadius: 10,
@@ -413,7 +445,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  // ความสูงรูป ECG ปรับเพิ่มเป็น 105
   imageContainer: {
     width: "100%",
     height: 105,
