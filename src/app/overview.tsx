@@ -1,23 +1,23 @@
-import React, {
-  useEffect,
-  useState,
-  useMemo,
+import {
   useCallback,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import {
-  useRouter,
   useFocusEffect,
+  useRouter,
 } from 'expo-router';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -97,7 +97,6 @@ type Patient = {
   defaultHr?: number;
   currentHr?: number | null;
   ecg_image?: string | null;
-  is_deleted?: boolean;
   created_at?: string;
 };
 
@@ -206,7 +205,7 @@ export default function OverviewScreen() {
 
       const currentDeletedIds = await loadDeletedLocalIds();
 
-      // ดึงเฉพาะผู้ป่วยใน Supabase ที่ไม่ถูกลบ
+      // ดึงข้อมูลผู้ป่วยทั้งหมดที่มีใน Supabase
       const { data, error } = await supabase
         .from('patients')
         .select(`
@@ -218,10 +217,8 @@ export default function OverviewScreen() {
           level,
           status,
           ecg_image,
-          is_deleted,
           created_at
         `)
-        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -240,7 +237,6 @@ export default function OverviewScreen() {
         level: String(item.level || 'NORMAL').toUpperCase(),
         status: String(item.status || 'Normal Sinus Rhythm'),
         ecg_image: item.ecg_image || null,
-        is_deleted: item.is_deleted || false,
         created_at: item.created_at || undefined,
       }));
 
@@ -248,8 +244,18 @@ export default function OverviewScreen() {
         (p) => !currentDeletedIds.includes(p.id)
       );
 
+      // -------------------------------------------------------------
+      // ✅ แก้ไขปัญหา Key ซ้ำ: กรองเอา Mock Data ตัวที่มี ID หรือ HN ตรงกับ Database ออก
+      // -------------------------------------------------------------
+      const dbIds = new Set(databasePatients.map((p) => p.id));
+      const dbHns = new Set(databasePatients.map((p) => p.hn));
+
+      const filteredInitialPatients = activeInitialPatients.filter(
+        (p) => !dbIds.has(p.id) && !dbHns.has(p.hn)
+      );
+
       const allPatients: Patient[] = [
-        ...activeInitialPatients,
+        ...filteredInitialPatients,
         ...databasePatients,
       ];
 
@@ -274,34 +280,31 @@ export default function OverviewScreen() {
     }, [fetchPatients])
   );
 
-  // Soft Delete
-  const handleSoftDelete = (patient: Patient) => {
+  // Hard Delete: ลบออกจาก Database ตลอดกาล
+  const handleHardDelete = (patient: Patient) => {
     Alert.alert(
-      'ยืนยันการลบ',
-      `คุณต้องการลบข้อมูลของ "${patient.name}" ใช่หรือไม่?`,
+      'ยืนยันการลบถาวร',
+      `คุณต้องการลบข้อมูลของ "${patient.name}" ออกจากระบบตลอดกาลใช่หรือไม่?`,
       [
         { text: 'ยกเลิก', style: 'cancel' },
         {
-          text: 'ลบข้อมูล',
+          text: 'ลบถาวร',
           style: 'destructive',
           onPress: async () => {
             try {
               if (!patient.id.startsWith('PT')) {
-                // ลบใน Supabase
+                // ลบ Row ออกจาก Supabase โดยตรง (Hard Delete)
                 const { error } = await supabase
                   .from('patients')
-                  .update({
-                    is_deleted: true,
-                    deleted_at: new Date().toISOString(),
-                  })
+                  .delete()
                   .eq('id', patient.id);
 
                 if (error) {
-                  Alert.alert('เกิดข้อผิดพลาด', error.message);
+                  Alert.alert('เกิดข้อผิดพลาดในการลบ', error.message);
                   return;
                 }
               } else {
-                // บันทึกลง AsyncStorage สำหรับ PT1-PT5
+                // สำหรับ Mock Data PT1-PT5 บันทึก ID ลง AsyncStorage เพื่อซ่อนถาวร
                 const updatedDeleted = [...deletedLocalIds, patient.id];
                 setDeletedLocalIds(updatedDeleted);
                 await AsyncStorage.setItem('DELETED_PATIENT_IDS', JSON.stringify(updatedDeleted));
@@ -317,7 +320,7 @@ export default function OverviewScreen() {
                 }
               }
             } catch (err: any) {
-              console.error('Soft delete error:', err);
+              console.error('Hard delete error:', err);
               Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้');
             }
           },
@@ -378,7 +381,7 @@ export default function OverviewScreen() {
     return (
       <TouchableOpacity
         style={styles.deleteSwipeButton}
-        onPress={() => handleSoftDelete(patient)}
+        onPress={() => handleHardDelete(patient)}
       >
         <Text style={styles.deleteSwipeText}>🗑️ ลบ</Text>
       </TouchableOpacity>
@@ -410,7 +413,7 @@ export default function OverviewScreen() {
         {!loading && errorMessage && (
           <View style={styles.errorBox}>
             <Text style={{ color: '#dc2626', fontWeight: 'bold', fontSize: 12 }}>
-              ⚠️ ไม่สามารถโหลดข้อมูล จาก Supabase ได้
+              ⚠️️ ไม่สามารถโหลดข้อมูล จาก Supabase ได้
             </Text>
             <Text style={{ color: '#7f1d1d', fontSize: 11, marginTop: 4 }}>
               {errorMessage}
@@ -426,28 +429,28 @@ export default function OverviewScreen() {
         {selectedPatient && (
           <View
             style={[
-              S.largeHrCard,
+              styles.largeHrCard,
               {
                 backgroundColor: selectedPatient.evalResult.bg,
                 borderColor: selectedPatient.evalResult.color,
               },
             ]}
           >
-            <Text style={{ fontSize: 12.35, fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>
               LIVE SENSOR MONITORING ({selectedPatient.name})
             </Text>
 
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 7.6 }}>
-              <Text style={{ fontSize: 60.8, fontWeight: 'bold', color: selectedPatient.evalResult.color }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 8 }}>
+              <Text style={{ fontSize: 60, fontWeight: 'bold', color: selectedPatient.evalResult.color }}>
                 {selectedPatient.currentHr ?? '--'}
               </Text>
-              <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#64748b', marginLeft: 7.6 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#64748b', marginLeft: 8 }}>
                 BPM
               </Text>
             </View>
 
-            <View style={{ backgroundColor: selectedPatient.evalResult.color, paddingHorizontal: 13.3, paddingVertical: 3.8, borderRadius: 19 }}>
-              <Text style={{ color: '#fff', fontSize: 11.4, fontWeight: 'bold' }}>
+            <View style={{ backgroundColor: selectedPatient.evalResult.color, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 }}>
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}>
                 {selectedPatient.evalResult.text}
               </Text>
             </View>
@@ -458,8 +461,8 @@ export default function OverviewScreen() {
           <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
             รายชื่อผู้ป่วย (ปัดซ้ายเพื่อลบ)
           </Text>
-          <TouchableOpacity style={S.addPatientBtn} onPress={() => router.push('/add-patient')}>
-            <Text style={S.addPatientText}>＋ Add New Patient</Text>
+          <TouchableOpacity style={styles.addPatientBtn} onPress={() => router.push('/add-patient')}>
+            <Text style={styles.addPatientText}>＋ Add New Patient</Text>
           </TouchableOpacity>
         </View>
 
@@ -467,24 +470,24 @@ export default function OverviewScreen() {
           ผู้ป่วยทั้งหมด {sortedPatients.length} คน
         </Text>
 
-        {sortedPatients.map((patient) => {
+        {sortedPatients.map((patient, index) => {
           const isSelected = patient.id === selectedPatientId;
 
           return (
             <Swipeable
-              key={patient.id}
+              key={`patient-${patient.id}-${index}`}
               renderRightActions={() => renderRightActions(patient)}
               overshootRight={false}
             >
               <TouchableOpacity
                 activeOpacity={0.9}
                 style={[
-                  S.patientNameCard,
+                  styles.patientNameCard,
                   {
                     borderLeftColor: patient.evalResult.color,
                     borderLeftWidth: 6,
                   },
-                  isSelected && S.selectedCard,
+                  isSelected && styles.selectedCard,
                 ]}
                 onPress={() => setSelectedPatientId(patient.id)}
               >
@@ -498,7 +501,7 @@ export default function OverviewScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={S.detailBtn}
+                  style={styles.detailBtn}
                   onPress={() =>
                     router.push({
                       pathname: '/live',
@@ -532,13 +535,10 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   deleteSwipeButton: { backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center', width: 80, height: '84%', borderRadius: 12, marginBottom: 10 },
   deleteSwipeText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-});
-
-const S = {
-  largeHrCard: { padding: 19, borderRadius: 15.2, borderWidth: 2, alignItems: 'center' as const, justifyContent: 'center' as const, marginBottom: 19, elevation: 3 },
-  patientNameCard: { backgroundColor: '#ffffff', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0', flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+  largeHrCard: { padding: 19, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginBottom: 19, elevation: 3 },
+  patientNameCard: { backgroundColor: '#ffffff', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   selectedCard: { backgroundColor: '#fcfcfc', borderColor: '#177bad' },
   detailBtn: { paddingVertical: 6, paddingHorizontal: 8 },
   addPatientBtn: { backgroundColor: '#0284c7', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, marginLeft: 8 },
   addPatientText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
-};
+});

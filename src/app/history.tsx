@@ -236,53 +236,24 @@ export default function HistoryScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#f8fafc", padding: 16 }}>
-      {/* Header Profile Card */}
       <View style={S.card}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <View style={{ flex: 1 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 4,
-              }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <Text style={S.badge}>{activeId}</Text>
-              <Text
-                style={{ fontSize: 11, fontWeight: "bold", color: "#64748b" }}
-              >
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#64748b" }}>
                 {patient.hn}
               </Text>
             </View>
-            <Text
-              style={{ fontSize: 20, fontWeight: "bold", color: "#0f172a" }}
-            >
+            <Text style={{ fontSize: 20, fontWeight: "bold", color: "#0f172a" }}>
               {patient.name}
             </Text>
             <Text style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>
               {patient.gender} • {patient.age} ปี
             </Text>
 
-            <View
-              style={{
-                backgroundColor: "#f0f9ff",
-                padding: 8,
-                borderRadius: 6,
-                marginTop: 8,
-                borderWidth: 1,
-                borderColor: "#bae6fd",
-              }}
-            >
-              <Text
-                style={{ color: "#0369a1", fontSize: 11, fontWeight: "bold" }}
-              >
+            <View style={{ backgroundColor: "#f0f9ff", padding: 8, borderRadius: 6, marginTop: 8, borderWidth: 1, borderColor: "#bae6fd" }}>
+              <Text style={{ color: "#0369a1", fontSize: 11, fontWeight: "bold" }}>
                 🩺 DIAGNOSIS: {patient.diag}
               </Text>
               <Text style={{ color: "#0284c7", fontSize: 10, marginTop: 2 }}>
@@ -293,173 +264,76 @@ export default function HistoryScreen() {
 
           <TouchableOpacity
             style={S.liveBtn}
-            onPress={() =>
-              router.push({
-                pathname: "/live",
-                params: { patientId: activeId },
-              })
-            }
+            onPress={() => router.push({ pathname: "/live", params: { patientId: activeId } })}
           >
-            <Text
-              style={{ color: "#ffffff", fontWeight: "bold", fontSize: 11 }}
-            >
+            <Text style={{ color: "#ffffff", fontWeight: "bold", fontSize: 11 }}>
               ⚡ LIVE ECG
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <Text
-        style={{
-          fontSize: 15,
-          fontWeight: "bold",
-          color: "#0f172a",
-          marginBottom: 10,
-        }}
-      >
+      <Text style={{ fontSize: 15, fontWeight: "bold", color: "#0f172a", marginBottom: 10 }}>
         📋 ประวัติการประมวลผล ECG และพยาธิวิทยาทางคลินิกย้อนหลัง
       </Text>
 
-      {/* Medical Logs */}
       {patient.logs.map((log: any, index: number) => (
-        <View
-          key={index}
-          style={[
-            S.card,
-            { backgroundColor: log.bg, borderColor: log.color + "50" },
-          ]}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 6,
-            }}
-          >
-            <Text
-              style={{ fontSize: 11, fontWeight: "bold", color: "#475569" }}
-            >
+        <View key={index} style={[S.card, { backgroundColor: log.bg, borderColor: log.color + "50" }]}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <Text style={{ fontSize: 11, fontWeight: "bold", color: "#475569" }}>
               🕒 {log.date}
             </Text>
-            <Text
-              style={{
-                fontSize: 10,
-                fontWeight: "bold",
-                color: "#fff",
-                backgroundColor: log.color,
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                borderRadius: 4,
-              }}
-            >
+            <Text style={{ fontSize: 10, fontWeight: "bold", color: "#fff", backgroundColor: log.color, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
               {log.level}
             </Text>
           </View>
 
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: "bold",
-              color: log.color,
-              marginBottom: 8,
-            }}
-          >
+          <Text style={{ fontSize: 15, fontWeight: "bold", color: log.color, marginBottom: 8 }}>
             {log.status}
           </Text>
 
           <View style={S.clinicalBox}>
             <Text style={S.clinicalText}>
-              🩺 <Text style={{ fontWeight: "bold" }}>Vitals:</Text>{" "}
-              {log.vitals}
+              🩺 <Text style={{ fontWeight: "bold" }}>Vitals:</Text> {log.vitals}
             </Text>
             <Text style={S.clinicalText}>
-              🧪 <Text style={{ fontWeight: "bold" }}>Lab / Biomarkers:</Text>{" "}
-              {log.lab}
+              🧪 <Text style={{ fontWeight: "bold" }}>Lab / Biomarkers:</Text> {log.lab}
             </Text>
             <Text style={S.clinicalText}>
-              📈 <Text style={{ fontWeight: "bold" }}>ECG Analysis:</Text>{" "}
-              {log.ecgDetail}
+              📈 <Text style={{ fontWeight: "bold" }}>ECG Analysis:</Text> {log.ecgDetail}
             </Text>
           </View>
 
-          <View
-            style={{
-              backgroundColor: "#ffffff",
-              padding: 8,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: "#e2e8f0",
-              marginBottom: 8,
-            }}
-          >
+          <View style={{ backgroundColor: "#ffffff", padding: 8, borderRadius: 6, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 8 }}>
             <Text style={{ fontSize: 11, color: "#334155", lineHeight: 16 }}>
-              🧬{" "}
-              <Text style={{ fontWeight: "bold", color: "#0f172a" }}>
-                Pathophysiology (กลไกการเกิดโรค):
-              </Text>{" "}
-              {log.pathoNote}
+              🧬 <Text style={{ fontWeight: "bold", color: "#0f172a" }}>Pathophysiology (กลไกการเกิดโรค):</Text> {log.pathoNote}
             </Text>
           </View>
 
-          <View
-            style={{
-              backgroundColor: "#ffffff",
-              padding: 8,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: "#e2e8f0",
-            }}
-          >
+          <View style={{ backgroundColor: "#ffffff", padding: 8, borderRadius: 6, borderWidth: 1, borderColor: "#e2e8f0" }}>
             <Text style={{ fontSize: 11, color: "#0f172a", lineHeight: 16 }}>
-              💊{" "}
-              <Text style={{ fontWeight: "bold", color: "#0f172a" }}>
-                Clinical Plan & Guidelines:
-              </Text>
+              💊 <Text style={{ fontWeight: "bold", color: "#0f172a" }}>Clinical Plan & Guidelines:</Text>
               {"\n"}
               {log.plan}
             </Text>
           </View>
 
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-end",
-              marginTop: 8,
-              borderTopWidth: 1,
-              borderColor: "#cbd5e1",
-              paddingTop: 6,
-            }}
-          >
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 8, borderTopWidth: 1, borderColor: "#cbd5e1", paddingTop: 6 }}>
             <Text style={{ fontSize: 10, color: "#64748b" }}>
-              AI Model Confidence Score:{" "}
-              <Text style={{ fontWeight: "bold", color: log.color }}>
-                {log.conf}%
-              </Text>
+              AI Model Confidence Score: <Text style={{ fontWeight: "bold", color: log.color }}>{log.conf}%</Text>
             </Text>
           </View>
         </View>
       ))}
 
-      <TouchableOpacity
-        style={S.btnSecondary}
-        onPress={() => router.push("/overview")}
-      >
-        <Text style={S.btnSecondaryText}>
-          ⬅ กลับหน้า Patient Monitoring (Overview)
-        </Text>
+      <TouchableOpacity style={S.btnSecondary} onPress={() => router.push("/overview")}>
+        <Text style={S.btnSecondaryText}>⬅ กลับหน้า Patient Monitoring (Overview)</Text>
       </TouchableOpacity>
-      {/* ⚠️ Disclaimer Box */}
+
       <View style={S.disclaimerBox}>
-        <Text style={S.disclaimerTitle}>
-          ⚠️ ข้อตกลงและคำชี้แจงสิทธิ์ (Disclaimer)
-        </Text>
+        <Text style={S.disclaimerTitle}>⚠️ ข้อตกลงและคำชี้แจงสิทธิ์ (Disclaimer)</Text>
         <Text style={S.disclaimerText}>
-          แอปพลิเคชันนี้เป็นเพียงระบบต้นแบบ (Prototype)
-          เพื่อการศึกษาและการวิจัยเท่านั้น
-          ไม่ได้เป็นอุปกรณ์หรือเครื่องมือทางการแพทย์สำหรับใช้ในการวินิจฉัย
-          ประเมิน หรือรักษาโรคจริง
-          ห้ามนำข้อมูลในระบบไปใช้ทดแทนการตัดสินใจหรือการรักษาพยาบาลโดยแพทย์เด็ดขาด
+          แอปพลิเคชันนี้เป็นเพียงระบบต้นแบบ (Prototype) เพื่อการศึกษาและการวิจัยเท่านั้น ไม่ได้เป็นอุปกรณ์หรือเครื่องมือทางการแพทย์สำหรับใช้ในการวินิจฉัย ประเมิน หรือรักษาโรคจริง ห้ามนำข้อมูลในระบบไปใช้ทดแทนการตัดสินใจหรือการรักษาพยาบาลโดยแพทย์เด็ดขาด
         </Text>
       </View>
     </ScrollView>
@@ -467,70 +341,14 @@ export default function HistoryScreen() {
 }
 
 const S = {
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  badge: {
-    backgroundColor: "#2563eb",
-    color: "#fff",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    fontSize: 10,
-    fontWeight: "bold" as const,
-  },
-  liveBtn: {
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  clinicalBox: {
-    backgroundColor: "#ffffff",
-    padding: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    gap: 4,
-    marginBottom: 8,
-  },
+  card: { backgroundColor: "#ffffff", padding: 14, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0" },
+  badge: { backgroundColor: "#2563eb", color: "#fff", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: "bold" as const },
+  liveBtn: { backgroundColor: "#2563eb", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  clinicalBox: { backgroundColor: "#ffffff", padding: 8, borderRadius: 6, borderWidth: 1, borderColor: "#cbd5e1", gap: 4, marginBottom: 8 },
   clinicalText: { fontSize: 11, color: "#1e293b", lineHeight: 16 },
-  btnSecondary: {
-    backgroundColor: "#e2e8f0",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center" as const,
-    marginTop: 8,
-    marginBottom: 30,
-  },
-  btnSecondaryText: {
-    color: "#334155",
-    fontWeight: "bold" as const,
-    fontSize: 13,
-  },
-  /* Disclaimer Box Style */
-  disclaimerBox: {
-    marginTop: 0,
-    padding: 12,
-    backgroundColor: "#fffbe2", // 🎨 พื้นหลังสีเหลือง/ส้มอ่อนเตือนความคุ้มครอง
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#fef08a",
-  },
-  disclaimerTitle: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#854d0e",
-    marginBottom: 4,
-  },
-  disclaimerText: {
-    fontSize: 10,
-    color: "#a16207",
-    lineHeight: 15,
-  },
+  btnSecondary: { backgroundColor: "#e2e8f0", padding: 12, borderRadius: 8, alignItems: "center" as const, marginTop: 8, marginBottom: 30 },
+  btnSecondaryText: { color: "#334155", fontWeight: "bold" as const, fontSize: 13 },
+  disclaimerBox: { marginTop: 0, padding: 12, backgroundColor: "#fffbe2", borderRadius: 10, borderWidth: 1, borderColor: "#fef08a" },
+  disclaimerTitle: { fontSize: 11, fontWeight: "bold", color: "#854d0e", marginBottom: 4 },
+  disclaimerText: { fontSize: 10, color: "#a16207", lineHeight: 15 },
 };
