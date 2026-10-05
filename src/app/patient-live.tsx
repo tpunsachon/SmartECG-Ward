@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const getPatientImage = (key: string) => {
   try {
@@ -118,6 +118,16 @@ export default function PatientLiveScreen() {
       >
         <Text style={styles.btnSecondaryText}>📋 ดูประวัติย้อนหลัง (PATIENT HISTORY) ➔</Text>
       </TouchableOpacity>
+
+      {/* ปุ่ม Export PDF */}
+      <TouchableOpacity
+  style={styles.btnExport}
+  onPress={exportPDF}
+>
+  <Text style={styles.btnExportText}>
+    📄 Export Patient Report (PDF)
+  </Text>
+</TouchableOpacity>
     </ScrollView>
   );
 }

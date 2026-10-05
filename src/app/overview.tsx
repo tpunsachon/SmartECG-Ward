@@ -69,7 +69,7 @@ const INITIAL_PATIENTS = [
   {
     id: "PT5",
     hn: "HN 68-00512",
-    name: "รณ นภาลัย",
+    name: "รณพีร์ จุฑาเทพ",
     gender: "ชาย",
     age: 32,
     level: "NORMAL",
