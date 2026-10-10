@@ -10,10 +10,10 @@
 
 | สมาชิก | บทบาทหน้าที่ |
 |---|---|
-| นางสาววีระยารัตน์ กันธพงศ์  | หน้าที่ |
-| นางสาวธนัชพร ธัญญากุลวงศ์ | หน้าที่ |
-| นางสาวพรรษชล ชัยเจริญ | หน้าที่ |
-| นางสาวพัชรพรรณ นามศิริ | หน้าที่ |
+| นางสาววีระยารัตน์ กันธพงศ์  | หน้าที่ |พัฒนาระบบ Export Data สำหรับส่งออกข้อมูลจากระบบ
+| นางสาวธนัชพร ธัญญากุลวงศ์ | หน้าที่ |พัฒนาระบบ User Input สำหรับรับข้อมูลจากผู้ใช้
+| นางสาวพรรษชล ชัยเจริญ | หน้าที่ |ออกแบบ UI/UX และโครงสร้างหน้าจอของแอปพลิเคชันด้วย React Native
+| นางสาวพัชรพรรณ นามศิริ | หน้าที่ |พัฒนาระบบ Sensor และเชื่อมต่อฐานข้อมูล
 
 # 3. ปัญหาและแรงจูงใจ
 
@@ -192,37 +192,37 @@ ECG Graph / Dashboard
 
 ---
 
+
 ## 8. ภาพหน้าจอ
 
 ### 8.1 Login
-
-![Login Screen](screenshots/login.png)
+![Login Screen](screenshots/login.jpg)
 
 ### 8.2 Register
-
-![Register Screen](screenshots/register.png)
+![Register Screen](screenshots/register.jpg)
 
 ### 8.3 Dashboard
+![Dashboard Screen](screenshots/dashboard.jpg)
 
-![Dashboard Screen](screenshots/dashboard.png)
+### 8.4 Add Patient - Patient Information
+![Add Patient Information](screenshots/add-patient.jpg)
 
-### 8.4 Add Patient
+### 8.5 Add Patient - ECG Information
+![Add Patient ECG Information](screenshots/add-patient-ecg.jpg)
 
-![Add Patient Screen](screenshots/add-patient.png)
-
-### 8.5 Patient List
-
-![Patient List Screen](screenshots/patient-list.png)
-
-> หมายเหตุ: ให้นำรูปภาพจริงของแอปใส่ไว้ในโฟลเดอร์ `screenshots` ของ Repository
+### 8.6 Patient List
+![Patient List Screen](screenshots/patient-list.jpg)
 
 ---
+
+> หมายเหตุ: รูปภาพหน้าจอของแอปพลิเคชันจัดเก็บไว้ในโฟลเดอร์ `screenshots` ของ Repository
+
 
 ## 9. วิดีโอสาธิต
 
 วิดีโอสาธิตการทำงานของ SmartECG-Ward
 
-[SmartECG-Ward Demo Video](ใส่ลิงก์วิดีโอที่นี่)
+[SmartECG-Ward Demo Video](https://www.youtube.com/shorts/iNqd_Qswxko)
 
 ภายในวิดีโอควรแสดงการทำงานดังนี้
 
