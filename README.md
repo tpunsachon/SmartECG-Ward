@@ -322,13 +322,13 @@ void loop() {
     tsLastReport = millis();
   }
 
-  // 2. ส่งขึ้น Supabase ทุกๆ 2 วินาที (ตามโค้ดเดิมของคุณ)
+  // 2. ส่งขึ้น Supabase ทุกๆ 2 วินาที 
   if (millis() - tsLastUpload >= UPLOAD_INTERVAL_MS) {
     if (heartRate >= 40 && heartRate <= 200 && spo2 >= 85 && spo2 <= 100) {
       sendToSupabase(heartRate, spo2);
     } else {
       Serial.println("No finger detected -> Sending 0 to disconnect");
-      sendToSupabase(0, 0); // 👈 เพิ่มบรรทัดนี้ลงไปครับ
+      sendToSupabase(0, 0); 
     }
 
     tsLastUpload = millis();
