@@ -16,15 +16,6 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
 ## Get a fresh project
 
 When you're ready, run:
@@ -35,41 +26,38 @@ npm run reset-project
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-### Other setup steps
+# 1. ชื่อแอป
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-# SmartECG-Ward
 #  SmartECG-Ward — ระบบมอนิเตอร์คลื่นไฟฟ้าหัวใจในวอร์ด
 
 แอปพลิเคชันระบบมอนิเตอร์สัญญาณชีพและคลื่นไฟฟ้าหัวใจ (ECG Monitoring & Triage System) สำหรับพยาบาลและบุคลากรทางการแพทย์ในวอร์ดผู้ป่วยหนัก พัฒนาด้วย **React Native (Expo Router)** ร่วมกับ **TypeScript**
 
 >  **คำชี้แจง (Disclaimer):** แอปพลิเคชันนี้จัดทำขึ้นเพื่อการศึกษาและเป็นชิ้นงานต้นแบบ (Prototype) เท่านั้น ไม่ใช่อุปกรณ์หรือเครื่องมือสำหรับวินิจฉัยทางการแพทย์จริง
 
+# 2 . สมาชิกในกลุ่มและบทบาทหน้าที่
 
-## เทคโนโลยีที่ใช้ (Tech Stack)
+| สมาชิก | บทบาทหน้าที่ |
+|---|---|
+| นางสาววีระยารัตน์ กันธพงศ์  | หน้าที่ |พัฒนาระบบ Export Data สำหรับส่งออกข้อมูลจากระบบ
+| นางสาวธนัชพร ธัญญากุลวงศ์ | หน้าที่ |พัฒนาระบบ User Input สำหรับรับข้อมูลจากผู้ใช้
+| นางสาวพรรษชล ชัยเจริญ | หน้าที่ |ออกแบบ UI/UX และโครงสร้างหน้าจอของแอปพลิเคชันด้วย React Native
+| นางสาวพัชรพรรณ นามศิริ | หน้าที่ |พัฒนาระบบ Sensor และเชื่อมต่อฐานข้อมูล
 
-* **Framework:** React Native (Expo Router v3)
-* **Language:** TypeScript
-* **State & Routing:** File-based Routing (Expo Router)
-* **UI & Styling:** Custom Pastel Light Theme / React Native StyleSheet
+# 3. ปัญหาและแรงจูงใจ
 
-##  ฟีเจอร์หลักของระบบ (Key Features)
+การจัดการข้อมูลผู้ป่วยและข้อมูลทางสุขภาพจำเป็นต้องมีการจัดเก็บ
+ข้อมูลอย่างเป็นระบบ เพื่อให้สามารถดูข้อมูลและติดตามข้อมูล
+ของผู้ป่วยได้สะดวกมากขึ้น
+
+SmartECG-Ward จึงถูกพัฒนาขึ้นเพื่อเป็นต้นแบบ Mobile Application
+สำหรับจัดการข้อมูลผู้ป่วย โดยมีแนวคิดในการรวมข้อมูลผู้ป่วย
+และข้อมูลทาง Healthcare ไว้ในระบบเดียว
+
+แรงจูงใจในการพัฒนาโปรเจกต์นี้คือการนำความรู้ด้าน
+React Native, Database, IoT และ Biomedical Technology
+มาประยุกต์ใช้ในการสร้างระบบต้นแบบที่สามารถนำไปพัฒนาต่อได้
+
+# 4. ฟีเจอร์หลักของระบบ (Key Features)
 
 1. **Authentication System Guard:** หน้าลงทะเบียน / เข้าสู่ระบบสำหรับเจ้าหน้าที่พยาบาล พร้อมกั้นสิทธิ์การเข้าถึงข้อมูลผู้ป่วย
 2. **Ward Overview (Dashboard):** สรุปสถานะผู้ป่วยทั้งวอร์ด พร้อมจัดหมวดหมู่ความเสี่ยงตามมาตรฐาน Triage Color-Coding (`NORMAL`, `WARNING`, `CRITICAL`, `EMERGENCY`)
@@ -78,7 +66,44 @@ Join our community of developers creating universal apps.
 5. **Add Patient Form:** ฟอร์มรับลงทะเบียนผู้ป่วยใหม่เข้าสู่วอร์ด (`/add-patient`) พร้อมกำหนดระดับความเสี่ยงเบื้องต้น
 
 
-##  วิธีการติดตั้งและรันโปรเจกต์ (Getting Started)
+# 5. แผนภาพสถาปัตยกรรมของระบบ
+
+## System Architecture
+
+```text
+                   ┌──────────────────┐
+                   │      User        │
+                   └────────┬─────────┘
+                            │
+                            ▼
+                   ┌──────────────────┐
+                   │  React Native    │
+                   │      App         │
+                   └────────┬─────────┘
+                            │
+                 ┌──────────┴──────────┐
+                 │                     │
+                 ▼                     ▼
+        ┌─────────────────┐   ┌─────────────────┐
+        │ Authentication  │   │  Patient Data   │
+        │     System      │   │     System      │
+        └────────┬────────┘   └────────┬────────┘
+                 │                     │
+                 └──────────┬──────────┘
+                            ▼
+                   ┌──────────────────┐
+                   │    Supabase      │
+                   │     Database     │
+                   └────────┬─────────┘
+                            │
+                            ▼
+                   ┌──────────────────┐
+                   │ Patient / Sensor │
+                   │      Data        │
+                   └──────────────────┘
+```
+
+# **6.** วิธีการติดตั้งและรันโปรเจกต์ (Getting Started)
 
 ### 1. เครื่องมือที่ต้องเตรียมก่อนใช้งาน (Prerequisites)
 * [Node.js](https://nodejs.org/) (เวอร์ชัน 18 ขึ้นไป)
@@ -89,4 +114,231 @@ Join our community of developers creating universal apps.
 ```bash
 git clone <URL_REPOSITORY_ของคุณ>
 cd SmartECG-Ward
-# SmartECG-Ward
+
+``` 
+
+## 7. Database / API / AI / Sensor
+
+### 7.1 Database
+
+โปรเจกต์ SmartECG-Ward ใช้ Supabase เป็น Database สำหรับจัดเก็บข้อมูลผู้ป่วย โดยข้อมูลที่กรอกผ่านหน้า Add Patient จะถูกบันทึกลงในฐานข้อมูล และสามารถเรียกกลับมาแสดงในแอปได้
+
+ข้อมูลที่จัดเก็บประกอบด้วย
+
+| Field      | Type      | Description                 |
+| ---------- | --------- | --------------------------- |
+| id         | UUID      | รหัสข้อมูล                  |
+| patient_id | Text      | รหัสผู้ป่วย                 |
+| name       | Text      | ชื่อผู้ป่วย                 |
+| age        | Integer   | อายุ                        |
+| gender     | Text      | เพศ                         |
+| room       | Text      | ห้องผู้ป่วย                 |
+| created_at | Timestamp | วันที่และเวลาที่เพิ่มข้อมูล |
+
+การทำงานของ Database:
+
+1. ผู้ใช้เข้าสู่หน้า Add Patient
+2. ผู้ใช้กรอกข้อมูลผู้ป่วย
+3. กดปุ่ม Save / Add Patient
+4. แอปส่งข้อมูลไปยัง Supabase
+5. Supabase บันทึกข้อมูลลงในตาราง `patients`
+6. แอปสามารถเรียกข้อมูลกลับมาแสดงใน Dashboard หรือ Patient List
+
+### 7.2 API
+
+ในเวอร์ชันปัจจุบัน แอปใช้ Supabase Client สำหรับติดต่อกับ Database เพื่อเพิ่มและเรียกดูข้อมูลผู้ป่วย
+
+ตัวอย่างการเพิ่มข้อมูลผู้ป่วย:
+
+```javascript
+const { data, error } = await supabase
+  .from('patients')
+  .insert([
+    {
+      patient_id: patientId,
+      name: name,
+      age: age,
+      gender: gender,
+      room: room
+    }
+  ]);
+```
+
+ตัวอย่างการเรียกข้อมูลผู้ป่วย:
+
+```javascript
+const { data, error } = await supabase
+  .from('patients')
+  .select('*');
+```
+
+> หมายเหตุ: โปรเจกต์เวอร์ชันปัจจุบันยังไม่มี Backend API แยก เช่น Node.js, Express หรือ FastAPI
+
+### 7.3 AI
+
+ปัจจุบัน SmartECG-Ward ยังไม่ได้เชื่อมต่อ AI หรือ Machine Learning สำหรับการวิเคราะห์ ECG จริง
+
+แนวทางการพัฒนาในอนาคต ได้แก่
+
+* วิเคราะห์รูปแบบสัญญาณ ECG ด้วย AI
+* แสดงผลการวิเคราะห์ ECG
+* แสดง Confidence Score
+* เพิ่มคำอธิบายผลการวิเคราะห์
+* บันทึกผลการวิเคราะห์ลง Database
+
+AI ที่พัฒนาขึ้นในอนาคตมีวัตถุประสงค์เพื่อสนับสนุนการเรียนรู้และการแสดงข้อมูลเท่านั้น ไม่ใช้แทนการวินิจฉัยของบุคลากรทางการแพทย์
+
+### 7.4 Sensor / IoT
+
+ในเวอร์ชันปัจจุบันยังไม่ได้เชื่อมต่อ ECG Sensor หรืออุปกรณ์ IoT จริง
+
+แนวทางการพัฒนาในอนาคต:
+
+```text
+ECG Sensor
+    ↓
+ESP32
+    ↓
+Wi-Fi / MQTT / HTTP
+    ↓
+Backend / API
+    ↓
+Supabase Database
+    ↓
+SmartECG-Ward
+    ↓
+ECG Graph / Dashboard
+```
+
+ระบบในอนาคตสามารถพัฒนาให้รองรับ
+
+* การรับข้อมูล ECG แบบ Real-time
+* การแสดงกราฟ ECG
+* การบันทึกข้อมูล ECG ลง Database
+* การตรวจสอบค่าตามเกณฑ์ที่กำหนด
+* การแจ้งเตือนเมื่อพบค่าที่ต้องเฝ้าระวัง
+
+---
+
+
+## 8. ภาพหน้าจอ
+
+### 8.1 Login
+![Login Screen](screenshots/login.jpg)
+
+### 8.2 Register
+![Register Screen](screenshots/register.jpg)
+
+### 8.3 Dashboard
+![Dashboard Screen](screenshots/dashboard.jpg)
+
+### 8.4 Add Patient - Patient Information
+![Add Patient Information](screenshots/add-patient.jpg)
+
+### 8.5 Add Patient - ECG Information
+![Add Patient ECG Information](screenshots/add-patient-ecg.jpg)
+
+### 8.6 Patient List
+![Patient List Screen](screenshots/patient-list.jpg)
+
+---
+
+> หมายเหตุ: รูปภาพหน้าจอของแอปพลิเคชันจัดเก็บไว้ในโฟลเดอร์ `screenshots` ของ Repository
+
+
+## 9. วิดีโอสาธิต
+
+วิดีโอสาธิตการทำงานของ SmartECG-Ward
+
+[SmartECG-Ward Demo Video](https://www.youtube.com/shorts/iNqd_Qswxko)
+
+ภายในวิดีโอควรแสดงการทำงานดังนี้
+
+1. เปิดแอป
+2. Register
+3. Login
+4. เข้าสู่ Dashboard
+5. เพิ่มข้อมูลผู้ป่วยผ่าน Add Patient
+6. บันทึกข้อมูลผู้ป่วย
+7. แสดงข้อมูลผู้ป่วยที่บันทึกใน Database
+8. แสดงการทำงานของหน้าจอหลัก
+
+---
+
+## 10. ข้อจำกัด
+
+SmartECG-Ward เป็น Educational Prototype สำหรับการศึกษาและการพัฒนาระบบเท่านั้น
+
+ข้อจำกัดของระบบในปัจจุบัน ได้แก่
+
+* ยังไม่ได้เชื่อมต่อ ECG Sensor จริง
+* ยังไม่มีการวิเคราะห์ ECG ด้วย AI จริง
+* ยังไม่มี Backend API แยก เช่น Node.js, Express หรือ FastAPI
+* ยังไม่ได้ผ่านการทดสอบหรือรับรองทางคลินิก
+* ไม่ควรใช้ระบบเพื่อวินิจฉัยโรค
+* ไม่ควรใช้ระบบเพื่อตัดสินใจในการรักษาผู้ป่วยจริง
+* ข้อมูลที่ใช้ในการทดสอบเป็นข้อมูลสำหรับการพัฒนาต้นแบบ
+* ระบบยังไม่สามารถทดแทนการทำงานของบุคลากรทางการแพทย์ได้
+
+---
+
+## 11. การพัฒนาต่อในอนาคต
+
+### 11.1 Sensor / IoT
+
+* เชื่อมต่อ ECG Sensor กับ ESP32
+* รับข้อมูล ECG ผ่าน Wi-Fi
+* รองรับ MQTT หรือ HTTP
+* แสดงข้อมูล ECG แบบ Real-time
+* เพิ่มระบบแจ้งเตือน
+
+### 11.2 AI / Machine Learning
+
+* พัฒนา AI สำหรับช่วยวิเคราะห์ ECG
+* เพิ่มระบบ Classification
+* แสดง Confidence Score
+* เพิ่ม Explainable AI
+* ทดสอบ AI Model กับ Dataset ที่เหมาะสม
+
+### 11.3 Database
+
+* เพิ่ม Patient History
+* จัดเก็บประวัติ ECG
+* เพิ่ม Timestamp ของข้อมูล
+* เพิ่มระบบค้นหาและกรองข้อมูล
+* รองรับการ Export ข้อมูลเป็น CSV / JSON / PDF
+
+### 11.4 User System
+
+* เพิ่ม User Role เช่น Doctor, Nurse และ Admin
+* เพิ่มระบบกำหนดสิทธิ์การเข้าถึงข้อมูล
+* เพิ่มระบบรักษาความปลอดภัยของข้อมูล
+* ปรับปรุงระบบ Authentication
+
+### 11.5 User Interface
+
+* ปรับปรุง UI ให้ใช้งานง่ายขึ้น
+* เพิ่มกราฟ ECG
+* เพิ่มการแสดงสถานะข้อมูล
+* รองรับอุปกรณ์หลายขนาด
+* เพิ่ม Accessibility
+
+---
+
+## 12. Responsible Use
+
+SmartECG-Ward เป็น Educational Prototype ที่จัดทำขึ้นเพื่อการศึกษา การทดลอง และการพัฒนาทักษะด้าน Software, IoT และ Healthcare Technology เท่านั้น
+
+ระบบนี้ไม่ใช่อุปกรณ์ทางการแพทย์ และไม่ได้รับการรับรองสำหรับการใช้งานทางคลินิก
+
+ข้อมูลและผลลัพธ์จากระบบไม่ควรถูกนำไปใช้เพื่อ
+
+* วินิจฉัยโรค
+* ตัดสินใจในการรักษา
+* เปลี่ยนแปลงการรักษา
+* ประเมินภาวะฉุกเฉินของผู้ป่วยจริง
+* ใช้แทนคำแนะนำจากบุคลากรทางการแพทย์
+
+หากนำระบบไปพัฒนาต่อเพื่อใช้งานจริง จำเป็นต้องมีการตรวจสอบความถูกต้อง ความปลอดภัยของข้อมูล ความเป็นส่วนตัวของผู้ป่วย การทดสอบทางคลินิก และการปฏิบัติตามมาตรฐานหรือข้อกำหนดที่เกี่ยวข้อง
+
+ข้อมูลที่ใช้ในการพัฒนาและทดสอบระบบควรเป็นข้อมูลจำลองหรือข้อมูลที่ได้รับอนุญาตให้ใช้ และควรหลีกเลี่ยงการเปิดเผยข้อมูลส่วนบุคคลหรือข้อมูลสุขภาพของผู้ป่วยโดยไม่ได้รับอนุญาต
