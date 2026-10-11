@@ -334,7 +334,7 @@ void loop() {
     tsLastUpload = millis();
   }
 }
-```<img width="1206" height="2473" alt="IMG_3018" src="https://github.com/user-attachments/assets/2390d841-5896-49c5-9259-c723ecb75c90" />
+```
 
 ระบบในอนาคตสามารถพัฒนาให้รองรับ
 
