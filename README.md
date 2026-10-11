@@ -302,7 +302,7 @@ void loop() {
   float heartRate = pox.getHeartRate();
   float spo2 = pox.getSpO2();
 
-  // 1. พิมพ์ลง Serial Monitor ทุกๆ 1 วินาที (ตามโค้ดเดิมของคุณ)
+  // 1. พิมพ์ลง Serial Monitor ทุกๆ 1 วินาที 
   if (millis() - tsLastReport >= REPORTING_PERIOD_MS) {
     Serial.print("Heart Rate: ");
     Serial.print(heartRate, 1);
