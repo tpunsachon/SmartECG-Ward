@@ -350,31 +350,24 @@ void loop() {
 ## 8. ภาพหน้าจอ
 
 ### 8.1 Login
-![Login Screen](screenshots/login.jp<img width="1206" height="2486" alt="IMG_3017" src="https://github.com/user-attachments/assets/b71879d0-291c-427a-82ea-7a7cbfa9009d" />
-g)
+<img width="1206" height="2486" alt="IMG_3017" src="https://github.com/user-attachments/assets/b71879d0-291c-427a-82ea-7a7cbfa9009d" />
 
 ### 8.2 Register
 <img width="1206" height="2473" alt="IMG_3018" src="https://github.com/user-attachments/assets/4b266180-3f3c-4ddb-acee-095d7231d603" />
 
-![Register Screen](screenshots/register.jpg)
 
 ### 8.3 Overview
 <img width="603" height="1231" alt="Screenshot 2569-10-11 at 21 20 27" src="https://github.com/user-attachments/assets/4cb8ed18-3089-42b4-9678-79a003fca5d8" />
-![Dashboard Screen](screenshots/dashboard.jpg)
 
 ### 8.4 Add Patient - Patient Information
 <img width="603" height="1241" alt="Screenshot 2569-10-11 at 21 21 10" src="https://github.com/user-attachments/assets/d249f4b8-4d0d-4b7c-b40e-dc95f69697a2" />
 
-![Add Patient Information](screenshots/add-patient.jpg)
-
 ### 8.5 Add Patient - ECG Information
 <img width="603" height="1231" alt="Screenshot 2569-10-11 at 21 21 35" src="https://github.com/user-attachments/assets/a4655373-3648-435e-8463-594e48dd33cb" />
-![Add Patient ECG Information](screenshots/add-patient-ecg.jpg)
 
 ### 8.6 Patient List
 <img width="603" height="1244" alt="Screenshot 2569-10-11 at 21 22 30" src="https://github.com/user-attachments/assets/6e1f6512-ca11-4f77-9401-de45bcf687f4" />
 
-![Patient List Screen](screenshots/patient-list.jpg)
 ### 8.7 Summary
 <img width="603" height="1311" alt="Screenshot 2569-10-11 at 21 23 00 2" src="https://github.com/user-attachments/assets/8c055975-ad4e-46b0-bee4-f5bc59185420" />
 
